@@ -19,11 +19,11 @@ class bean:
         bean.aliveInstances.append(self)
         bean.updateInstances()
     def getX(self):
-        return self.selfX
+        return self.posX
     def getY(self):
-        return self.selfY
+        return self.posY
     def getPos(self):
-        return (self.selfX, self.selfY)
+        return (self.posX, self.posY)
     def updateInstances():
         for x in bean.aliveInstances:
             if x not in bean.instances:
@@ -127,27 +127,27 @@ class field:
             for y in range(perSide):
                 if beans[(x*perSide)+y] not in beansUsed:
                     if side == 1:
-                        beans[(x*perSide)+y].selfX, beans[(x*perSide)+y].selfY = 0, random.randrange(0, self.sizeY)
+                        beans[(x*perSide)+y].posX, beans[(x*perSide)+y].posY = 0, random.randrange(0, self.sizeY)
                     elif side == 2:
-                        beans[(x*perSide)+y].selfX, beans[(x*perSide)+y].selfY = self.sizeX-1, random.randrange(0, self.sizeY)
+                        beans[(x*perSide)+y].posX, beans[(x*perSide)+y].posY = self.sizeX-1, random.randrange(0, self.sizeY)
                     elif side == 3:
-                        beans[(x*perSide)+y].selfX, beans[(x*perSide)+y].selfY = random.randrange(0, self.sizeX), 0
+                        beans[(x*perSide)+y].posX, beans[(x*perSide)+y].posY = random.randrange(0, self.sizeX), 0
                     elif side == 4:
-                        beans[(x*perSide)+y].selfX, beans[(x*perSide)+y].selfY = random.randrange(0, self.sizeX), self.sizeY-1
+                        beans[(x*perSide)+y].posX, beans[(x*perSide)+y].posY = random.randrange(0, self.sizeX), self.sizeY-1
                     beansUsed.append(beans[(x*perSide+y)])
         for x in range(len(beans)):
             if beans[x] not in beansUsed:
-                beans[x].selfX, beans[x].selfY = random.randrange(0, self.sizeX), random.randrange(0, self.sizeY)
+                beans[x].posX, beans[x].posY = random.randrange(0, self.sizeX), random.randrange(0, self.sizeY)
                 beansUsed.append(beans[x])
         self.updateLocs(beans)
-    def moveBean(self, bean, newPos):
-        bean.posX = newPos[0]
-        bean.posY = newPos[1]
-        self.updateLocs([bean])
+    def moveBean(self, beanUsed, newPos):
+        beanUsed.posX = newPos[0]
+        beanUsed.posY = newPos[1]
+        self.updateLocs([beanUsed])
     def updateLocs(self, beans):
         for x in beans:
-            if not x in self.plot[(x.selfX, x.selfY)][1]:
-                self.plot[x.selfX, x.selfY][1].append(x)
+            if not x in self.plot[(x.posX, x.posY)][1]:
+                self.plot[x.posX, x.posY][1].append(x)
         
         for x in self.plot:
             for y in range(len(self.plot[x][1])):
@@ -172,7 +172,6 @@ C = hungry_bean('c', 1, 1, 1)
 c = field('c', 5, 5)
 c.randomPopulation(.2)
 c.beanPopulate([C])
-print(C.getY())
 print(c)
 #print(issubclass(type(C), bean))
 print(C.getPos())

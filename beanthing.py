@@ -64,13 +64,13 @@ class bean:
     def move(self, newX, newY):
         self.posX = newX
         self.posY = newY
-    def nextSquare(self, field, function):
+    def nextSquare(self, field, func):
         '''
         returns the square bean should go to on its path to target
         returns beans current square if already at target
         moves X then Y
         '''
-        goalLoc = self.function(field)
+        goalLoc = func(self, field)
         if goalLoc[0] != self.getX():
             if goalLoc[0] < self.getX():
                 return (self.getX()-1,self.getY())
@@ -140,15 +140,19 @@ class field:
                 beans[x].selfX, beans[x].selfY = random.randrange(0, self.sizeX), random.randrange(0, self.sizeY)
                 beansUsed.append(beans[x])
         self.updateLocs(beans)
+    def moveBean(self, bean, newPos):
+        bean.posX = newPos[0]
+        bean.posY = newPos[1]
+        self.updateLocs([bean])
     def updateLocs(self, beans):
         for x in beans:
             if not x in self.plot[(x.selfX, x.selfY)][1]:
                 self.plot[x.selfX, x.selfY][1].append(x)
+        
         for x in self.plot:
             for y in range(len(self.plot[x][1])):
-                if issubclass(type(self.plot[x][1][y]), bean):  
-                    self.plot[x][1][y].selfX = x[0]
-                    self.plot[x][1][y].selfY = x[1]
+                if issubclass(type(self.plot[x][1][y]), bean) and self.plot[x][1][y].getPos() != x:  
+                    self.plot[x][1].remove(y)
 
 
 A = hungry_bean('a', 3, 1, 1)
@@ -156,8 +160,6 @@ B = hungry_bean('b', 2.6, 1, 1)
 
 for x in range(11):
     bean.reproduce(A, B)
-print(bean.)
-
 #a = field('a', 10, 10)
 #a.randomPopulation(.2)
 #a.beanPopulate(bean.getBeans())
@@ -173,4 +175,11 @@ c.beanPopulate([C])
 print(C.getY())
 print(c)
 #print(issubclass(type(C), bean))
+print(C.getPos())
 print(C.pathFind(c))
+print(C.nextSquare(c, hungry_bean.pathFind))
+
+print("\n\n")
+c.moveBean(C, C.nextSquare(c, hungry_bean.pathFind))
+print(c)
+print(C.getPos())

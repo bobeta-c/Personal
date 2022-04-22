@@ -1,4 +1,6 @@
+from logging import raiseExceptions
 import random
+import colorama
 
 class bean:
     
@@ -71,6 +73,8 @@ class bean:
         moves X then Y
         '''
         goalLoc = func(self, field)
+        if goalLoc == self.getPos():
+            return self.getPos()
         if goalLoc[0] != self.getX():
             if goalLoc[0] < self.getX():
                 return (self.getX()-1,self.getY())
@@ -79,7 +83,7 @@ class bean:
             if goalLoc[1] < self.getY():
                 return (self.getX(), self.getY()-1)
             return (self.getX(),self.getY()+1)
-        return (self.getX(),self.getY())
+        raise Exception
 
 class hungry_bean(bean):
     def pathFind(self, field):
@@ -152,33 +156,37 @@ class field:
         for x in self.plot:
             for y in range(len(self.plot[x][1])):
                 if issubclass(type(self.plot[x][1][y]), bean) and self.plot[x][1][y].getPos() != x:  
-                    self.plot[x][1].remove(y)
+                    self.plot[x][1].remove(self.plot[x][1][y])
+
+def mainFunc():
+    A = hungry_bean('a', 3, 1, 1)
+    B = hungry_bean('b', 2.6, 1, 1)
+
+    for x in range(11):
+        bean.reproduce(A, B)
+    #a = field('a', 10, 10)
+    #a.randomPopulation(.2)
+    #a.beanPopulate(bean.getBeans())
+
+    #print(a)
+    #print(A.getX(), A.getY())
+    #print(A.pathFind(a))
+
+    C = hungry_bean('c', 1, 1, 1)
+    c = field('c', 5, 5)
+    c.randomPopulation(.2)
+    c.beanPopulate([C])
+    print(c)
+    #print(C.getPos())
+    #print(C.pathFind(c))
+    #print(C.nextSquare(c, hungry_bean.pathFind))
+    #while C.pathFind(c) != C.getPos():
+    for x in range(12):
+        print (C.nextSquare(c, hungry_bean.pathFind))
+        print (C.pathFind(c))
+        c.moveBean(C, C.nextSquare(c, hungry_bean.pathFind))
+        print(c)
+        print(C.getPos())
 
 
-A = hungry_bean('a', 3, 1, 1)
-B = hungry_bean('b', 2.6, 1, 1)
-
-for x in range(11):
-    bean.reproduce(A, B)
-#a = field('a', 10, 10)
-#a.randomPopulation(.2)
-#a.beanPopulate(bean.getBeans())
-
-#print(a)
-#print(A.getX(), A.getY())
-#print(A.pathFind(a))
-
-C = hungry_bean('c', 1, 1, 1)
-c = field('c', 5, 5)
-c.randomPopulation(.2)
-c.beanPopulate([C])
-print(c)
-#print(issubclass(type(C), bean))
-print(C.getPos())
-print(C.pathFind(c))
-print(C.nextSquare(c, hungry_bean.pathFind))
-
-print("\n\n")
-c.moveBean(C, C.nextSquare(c, hungry_bean.pathFind))
-print(c)
-print(C.getPos())
+mainFunc()

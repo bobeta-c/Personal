@@ -1,6 +1,5 @@
-def add(a,b):
-    return a+b
-def usefunc(c, d, func):
-    return func(c,d)
+import pygame
+def main():
 
-print(usefunc(1,2,add))
+    pygame.init()
+    

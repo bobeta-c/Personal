@@ -1,6 +1,6 @@
 from logging import raiseExceptions
 import random
-import colorama
+import pygame
 
 class bean:
     
@@ -92,7 +92,7 @@ class hungry_bean(bean):
         for x in field.plot:
             if field.plot[x][0] >= 1:
                 dist = ((x[0]-self.getX())**2 + (x[1]-self.getY())**2)**(1/2)
-                if (not closest) or dist < closest:
+                if (closest == None) or dist < closest:
                     closest = dist
                     location = x
         return location
@@ -121,7 +121,7 @@ class field:
                 string = string + str([self.plot[(x, self.sizeY-y-1)][0], beansOnTile])
                 #string = string + str(self.plot[x, self.sizeY-y-1])
             string = string + '\n'
-        return string
+        return string[:-1]
     def beanPopulate(self, beans):
         perSide = int(len(beans)/4)
         side = 0
@@ -176,17 +176,9 @@ def mainFunc():
     c = field('c', 5, 5)
     c.randomPopulation(.2)
     c.beanPopulate([C])
-    print(c)
-    #print(C.getPos())
-    #print(C.pathFind(c))
-    #print(C.nextSquare(c, hungry_bean.pathFind))
-    #while C.pathFind(c) != C.getPos():
-    for x in range(12):
-        print (C.nextSquare(c, hungry_bean.pathFind))
-        print (C.pathFind(c))
-        c.moveBean(C, C.nextSquare(c, hungry_bean.pathFind))
+    while C.nextSquare(c, hungry_bean.pathFind) != C.getPos():
         print(c)
         print(C.getPos())
-
-
+        c.moveBean(C, C.nextSquare(c, hungry_bean.pathFind))
+    print(c)
 mainFunc()

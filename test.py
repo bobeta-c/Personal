@@ -1,4 +1,5 @@
 import pygame
+import sys
 def main():
 
     pygame.init()
@@ -11,6 +12,7 @@ def main():
     screen = pygame.display.set_mode((240, 180))
     screen.fill((0,120,255))
     screen.blit(image, (240-32,180-32))
+    print(screen.get_size())
     pygame.display.flip()
 
     running = True
@@ -18,6 +20,7 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                sys.exit()
 
 
 if __name__ == "__main__":

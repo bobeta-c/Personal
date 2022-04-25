@@ -1,6 +1,8 @@
+from asyncio import wait_for
 from logging import raiseExceptions
 import random
 import pygame
+import sys
 
 class bean:
     
@@ -122,6 +124,19 @@ class field:
                 #string = string + str(self.plot[x, self.sizeY-y-1])
             string = string + '\n'
         return string[:-1]
+    def display(self, screen):
+        screen.fill((0,255,0))
+        dimensions = screen.get_size()
+        xIncrement = dimensions[0]//self.sizeX
+        yIncrement = dimensions[1]//self.sizeY
+        for i in self.plot:
+            if len(self.plot[i][1]) > 0:
+                pygame.draw.rect(screen, (255,0,0), pygame.Rect((i[0]*xIncrement, i[1]*yIncrement),((i[0]+1)*xIncrement, (i[1]+1)*yIncrement)))
+            elif self.plot[i][0] > 0:
+                pygame.draw.rect(screen, (0,255,0), pygame.Rect((i[0]*xIncrement, i[1]*yIncrement),((i[0]+1)*xIncrement, (i[1]+1)*yIncrement)))
+            else:
+                pygame.draw.rect(screen, (120,120,120), pygame.Rect((i[0]*xIncrement, i[1]*yIncrement),((i[0]+1)*xIncrement, (i[1]+1)*yIncrement)))
+        pygame.display.flip()
     def beanPopulate(self, beans):
         perSide = int(len(beans)/4)
         side = 0
@@ -173,12 +188,50 @@ def mainFunc():
     #print(A.pathFind(a))
 
     C = hungry_bean('c', 1, 1, 1)
-    c = field('c', 5, 5)
-    c.randomPopulation(.2)
+    c = field('c', 20, 20)
+    c.randomPopulation(.01)
     c.beanPopulate([C])
+    print(C.getPos())
     while C.nextSquare(c, hungry_bean.pathFind) != C.getPos():
         print(c)
         print(C.getPos())
         c.moveBean(C, C.nextSquare(c, hungry_bean.pathFind))
-    print(c)
-mainFunc()
+    #print(c)
+
+def animation():
+    pygame.init()
+    logo = pygame.image.load("logo32x32.png")
+    image = logo
+
+    pygame.display.set_icon(logo)
+    pygame.display.set_caption('test')
+
+
+    screen = pygame.display.set_mode((1000, 1000))
+    screen.fill((0,120,255))
+    screen.blit(image, (240-32,180-32))
+
+    C = hungry_bean('c', 1, 1, 1)
+    c = field('c', 50, 50)
+    c.randomPopulation(.005)
+    c.beanPopulate([C])
+
+    while C.nextSquare(c, hungry_bean.pathFind) != C.getPos():
+        c.display(screen)
+        print(C.getPos())
+        c.moveBean(C, C.nextSquare(c, hungry_bean.pathFind))
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    #sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                break
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+animation()

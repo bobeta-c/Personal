@@ -75,6 +75,8 @@ class bean:
         moves X then Y
         '''
         goalLoc = func(self, field)
+        if not goalLoc:
+            return self.getPos()
         if goalLoc == self.getPos():
             return self.getPos()
         if goalLoc[0] != self.getX():
@@ -111,7 +113,10 @@ class field:
     def randomPopulation(self, percentChance = .3):
         for x in self.plot:
             if (random.random() <= percentChance):
-                self.plot[x][0] = 1
+                self.plot[x][0] += 1
+    def controlledPopulation(self, locations):
+        for x in locations:
+            self.plot[x][0] += 1
     def __str__(self):
         string = ''
         for y in range(self.sizeY):
@@ -125,17 +130,18 @@ class field:
             string = string + '\n'
         return string[:-1]
     def display(self, screen):
-        screen.fill((0,255,0))
         dimensions = screen.get_size()
         xIncrement = dimensions[0]//self.sizeX
         yIncrement = dimensions[1]//self.sizeY
         for i in self.plot:
-            if len(self.plot[i][1]) > 0:
-                pygame.draw.rect(screen, (255,0,0), pygame.Rect((i[0]*xIncrement, i[1]*yIncrement),((i[0]+1)*xIncrement, (i[1]+1)*yIncrement)))
-            elif self.plot[i][0] > 0:
-                pygame.draw.rect(screen, (0,255,0), pygame.Rect((i[0]*xIncrement, i[1]*yIncrement),((i[0]+1)*xIncrement, (i[1]+1)*yIncrement)))
+            index = (i[0],self.sizeY-i[1]-1)
+            #index = i
+            if len(self.plot[index][1]) > 0:
+                pygame.draw.rect(screen, (255,0,0), pygame.Rect((index[0]*xIncrement, index[1]*yIncrement),((index[0]+1)*xIncrement, (index[1]+1)*yIncrement)))
+            elif self.plot[index][0] > 0:
+                pygame.draw.rect(screen, (0,255,0), pygame.Rect((index[0]*xIncrement, index[1]*yIncrement),((index[0]+1)*xIncrement, (index[1]+1)*yIncrement)))
             else:
-                pygame.draw.rect(screen, (120,120,120), pygame.Rect((i[0]*xIncrement, i[1]*yIncrement),((i[0]+1)*xIncrement, (i[1]+1)*yIncrement)))
+                pygame.draw.rect(screen, (120,120,120), pygame.Rect((index[0]*xIncrement, index[1]*yIncrement),((index[0]+1)*xIncrement, (index[1]+1)*yIncrement)))
         pygame.display.flip()
     def beanPopulate(self, beans):
         perSide = int(len(beans)/4)
@@ -173,6 +179,8 @@ class field:
                 if issubclass(type(self.plot[x][1][y]), bean) and self.plot[x][1][y].getPos() != x:  
                     self.plot[x][1].remove(self.plot[x][1][y])
 
+
+
 def mainFunc():
     A = hungry_bean('a', 3, 1, 1)
     B = hungry_bean('b', 2.6, 1, 1)
@@ -207,26 +215,30 @@ def animation():
     pygame.display.set_caption('test')
 
 
-    screen = pygame.display.set_mode((1000, 1000))
+    screen = pygame.display.set_mode((800, 800))
     screen.fill((0,120,255))
     screen.blit(image, (240-32,180-32))
 
     C = hungry_bean('c', 1, 1, 1)
-    c = field('c', 50, 50)
-    c.randomPopulation(.005)
-    c.beanPopulate([C])
+    c = field('c', 20, 20)
+    c.controlledPopulation([(0,0)])
+    C.move(19,19)
+    c.updateLocs([C])
+    #c.beanPopulate([C])
 
     while C.nextSquare(c, hungry_bean.pathFind) != C.getPos():
         c.display(screen)
         print(C.getPos())
         c.moveBean(C, C.nextSquare(c, hungry_bean.pathFind))
-        while True:
+        waiting = True
+        while waiting:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     #sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                break
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    waiting = False
+                    break
 
     running = True
     while running:

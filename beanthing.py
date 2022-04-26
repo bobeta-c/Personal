@@ -137,11 +137,12 @@ class field:
             index = (i[0],self.sizeY-i[1]-1)
             #index = i
             if len(self.plot[index][1]) > 0:
-                pygame.draw.rect(screen, (255,0,0), pygame.Rect((index[0]*xIncrement, index[1]*yIncrement),((index[0]+1)*xIncrement, (index[1]+1)*yIncrement)))
+                pygame.draw.rect(screen, (255,0,0), pygame.Rect((index[0]*xIncrement, index[1]*yIncrement),((index[0]+1)*xIncrement, (index[1]-1)*yIncrement)))
             elif self.plot[index][0] > 0:
-                pygame.draw.rect(screen, (0,255,0), pygame.Rect((index[0]*xIncrement, index[1]*yIncrement),((index[0]+1)*xIncrement, (index[1]+1)*yIncrement)))
+                pygame.draw.rect(screen, (0,255,0), pygame.Rect((index[0]*xIncrement, index[1]*yIncrement),((index[0]+1)*xIncrement, (index[1]-1)*yIncrement)))
             else:
-                pygame.draw.rect(screen, (120,120,120), pygame.Rect((index[0]*xIncrement, index[1]*yIncrement),((index[0]+1)*xIncrement, (index[1]+1)*yIncrement)))
+                pygame.draw.rect(screen, (120,120,120), pygame.Rect((index[0]*xIncrement, index[1]*yIncrement),((index[0]+1)*xIncrement, (index[1]-1)*yIncrement)))
+        pygame.draw.rect(screen, (0,0,0), ((dimensions[0]-20, dimensions[1]-20), (dimensions[0], dimensions[1])))
         pygame.display.flip()
     def beanPopulate(self, beans):
         perSide = int(len(beans)/4)
@@ -215,7 +216,7 @@ def animation():
     pygame.display.set_caption('test')
 
 
-    screen = pygame.display.set_mode((800, 800))
+    screen = pygame.display.set_mode((400, 400))
     screen.fill((0,120,255))
     screen.blit(image, (240-32,180-32))
 

@@ -13,6 +13,8 @@ def main():
     screen.fill((0,120,255))
     screen.blit(image, (240-32,180-32))
     print(screen.get_size())
+    pygame.draw.rect(screen,(0,0,0), pygame.Rect((0,0),(10,90)))
+    pygame.draw.rect(screen,(0,0,0), pygame.Rect((50,50),(100,100)))
     pygame.display.flip()
 
     running = True

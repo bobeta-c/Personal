@@ -9,7 +9,7 @@ class bean:
     instances = []
     aliveInstances = []
     names = []
-    def __init__(self, name, height, weight, fertility, parent1 = None, parent2 = None, posX = None, posY = None):
+    def __init__(self, name, height, weight, fertility, parent1 = None, parent2 = None, posX = None, posY = None, stomach = 0):
         self.alive = True
         self.name = name
         self.height = height
@@ -20,6 +20,7 @@ class bean:
         self.parent2 = parent2
         self.posX = posX
         self.posY = posY
+        self.stomach = stomach
         bean.aliveInstances.append(self)
         bean.updateInstances()
     def getX(self):
@@ -28,6 +29,8 @@ class bean:
         return self.posY
     def getPos(self):
         return (self.posX, self.posY)
+    def eat(self, amount = 1):
+        self.stomach += amount
     def updateInstances():
         for x in bean.aliveInstances:
             if x not in bean.instances:
@@ -76,7 +79,7 @@ class bean:
         '''
         goalLoc = func(self, field)
         if not goalLoc:
-            return self.getPos()
+            return None
         if goalLoc == self.getPos():
             return self.getPos()
         if goalLoc[0] != self.getX():
@@ -130,20 +133,27 @@ class field:
             string = string + '\n'
         return string[:-1]
     def display(self, screen):
+        screen.fill((120,120,120))
         dimensions = screen.get_size()
         xIncrement = dimensions[0]//self.sizeX
         yIncrement = dimensions[1]//self.sizeY
         for i in self.plot:
-            index = (i[0],self.sizeY-i[1]-1)
-            #index = i
+            index = i
+            location = (index[0]*xIncrement, index[1]*yIncrement)
+            location2 = (location[0]+xIncrement,location[1]+xIncrement)
             if len(self.plot[index][1]) > 0:
-                pygame.draw.rect(screen, (255,0,0), pygame.Rect((index[0]*xIncrement, index[1]*yIncrement),((index[0]+1)*xIncrement, (index[1]-1)*yIncrement)))
+                pygame.draw.rect(screen, (255,0,0), pygame.Rect(location,location2))
             elif self.plot[index][0] > 0:
-                pygame.draw.rect(screen, (0,255,0), pygame.Rect((index[0]*xIncrement, index[1]*yIncrement),((index[0]+1)*xIncrement, (index[1]-1)*yIncrement)))
+                pygame.draw.rect(screen, (0,255,0), pygame.Rect(location,location2))
             else:
-                pygame.draw.rect(screen, (120,120,120), pygame.Rect((index[0]*xIncrement, index[1]*yIncrement),((index[0]+1)*xIncrement, (index[1]-1)*yIncrement)))
-        pygame.draw.rect(screen, (0,0,0), ((dimensions[0]-20, dimensions[1]-20), (dimensions[0], dimensions[1])))
+                pygame.draw.rect(screen, (120,120,120), pygame.Rect(location,location2))
+        #pygame.draw.rect(screen, (0,0,0), pygame.Rect((dimensions[0]-20, yIncrement*16), (dimensions[0], yIncrement*17)))
         pygame.display.flip()
+    def beanEat(self, beans):
+        for x in beans:
+            if self.plot[x.getPos()][0] >= 0:
+                self.plot[x.getPos()][0] -= 1
+                x.eat()
     def beanPopulate(self, beans):
         perSide = int(len(beans)/4)
         side = 0
@@ -221,16 +231,16 @@ def animation():
     screen.blit(image, (240-32,180-32))
 
     C = hungry_bean('c', 1, 1, 1)
+    A = hungry_bean('a', 1, 1, 1)
     c = field('c', 20, 20)
-    c.controlledPopulation([(0,0)])
-    C.move(19,19)
-    c.updateLocs([C])
-    #c.beanPopulate([C])
-
-    while C.nextSquare(c, hungry_bean.pathFind) != C.getPos():
+    c.randomPopulation(.01)
+    c.beanPopulate([C, A])
+    while C.nextSquare(c, hungry_bean.pathFind):
+        
         c.display(screen)
-        print(C.getPos())
+        #print(C.getPos())
         c.moveBean(C, C.nextSquare(c, hungry_bean.pathFind))
+        c.moveBean(A, A.nextSquare(c, hungry_bean.pathFind))
         waiting = True
         while waiting:
             for event in pygame.event.get():
@@ -240,6 +250,9 @@ def animation():
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     waiting = False
                     break
+        c.beanEat([C, A])
+    c.display(screen)
+    print(C.getPos())
 
     running = True
     while running:

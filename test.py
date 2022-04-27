@@ -27,5 +27,8 @@ def main():
 
 if __name__ == "__main__":
 
-    print((12,12,12)*102)
+    b = int(1)
+
+    a = type(b)(2)
+    print(type(a))
     main()

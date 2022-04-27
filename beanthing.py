@@ -57,6 +57,8 @@ class bean:
     def canReproduce(self):
         return bool(self.stomach)
     def reproduce(bean1, bean2, name = None):
+        if bean1 == bean2:
+            return 1
         if (random.random() <= bean1.fertility and random.random() <= bean2.fertility):
             if (name and name not in bean.getNames()):
                 newname = name
@@ -72,7 +74,7 @@ class bean:
                     x.stomach -= x.energyReq
                 else:
                     x.stomach = 0
-            return (bean(newname, newheight, newweight, newfertility, bean1, bean2, posX = bean1.posX, posY = bean1.posY))
+            return (type(bean1)(newname, newheight, newweight, newfertility, bean1, bean2, posX = bean1.posX, posY = bean1.posY))
         return None
     def pathFind(self, field):
         pass
@@ -124,7 +126,22 @@ class hungry_bean(bean):
             return locationHouse
         else:
             return None
-            
+class bozo_bean(bean):
+    def pathFind(self, field):
+        closestHouse = None
+        locationHouse = None
+        for x in field.plot:
+            if field.plot[x][2] > 0 and self.canReproduce():
+                dist = ((x[0]-self.getX())**2 + (x[1]-self.getY())**2)**(1/2)
+                if (closestHouse == None) or dist < closestHouse:
+                    closestHouse = dist
+                    locationHouse = x
+        if locationHouse:
+            return locationHouse
+        else:
+            return (self.getX()+ random.randint(-1,1), self.getY() + random.randint(-1,1))
+
+
 class field:
     def __init__(self, name, sizeX, sizeY):
         self.name = name
@@ -182,7 +199,7 @@ class field:
         pygame.display.flip()
     def beanEat(self, beans):
         for x in beans:
-            if self.plot[x.getPos()][0] >= 0:
+            if self.plot[x.getPos()][0] > 0:
                 self.plot[x.getPos()][0] -= 1
                 x.eat()
     def beanReproduce(self, beans):
@@ -193,7 +210,7 @@ class field:
                     if not i.canReproduce():
                         ableToReproduce = False
                 if ableToReproduce:
-                    bean.reproduce(self.plot[x][1][0],self.plot[x][1][0])
+                    bean.reproduce(self.plot[x][1][0],self.plot[x][1][1])
         self.updateLocs(bean.aliveInstances)
 
     def beanPopulate(self, beans):
@@ -274,8 +291,8 @@ def animation():
     screen.fill((0,120,255))
     screen.blit(image, (240-32,180-32))
 
-    C = hungry_bean('c', 1, 1, 1, stomach=1)
-    A = hungry_bean('a', 1, 1, 1, stomach=1)
+    C = bozo_bean('c', 1, 1, 1, stomach=1)
+    A = bozo_bean('a', 1, 1, 1, stomach=1)
     c = field('c', 20, 20)
     #c.randomPopulation(.01)
     c.controlledHouse([(10,10)])
@@ -290,8 +307,8 @@ def animation():
             #c.randomPopulation(.002)
         c.display(screen)
         #print(C.getPos())
-        c.moveBean(C, C.nextSquare(c, hungry_bean.pathFind))
-        c.moveBean(A, A.nextSquare(c, hungry_bean.pathFind))
+        for individualBean in bean.aliveInstances:
+            c.moveBean(individualBean, individualBean.nextSquare(c, type(individualBean).pathFind))
         waiting = True
         while waiting:
             for event in pygame.event.get():
@@ -305,11 +322,7 @@ def animation():
                     break
         c.beanEat(bean.aliveInstances)
         c.beanReproduce(bean.aliveInstances)
-        print(bean.aliveInstances)
         count += 1
-    print('Done')
-    c.display(screen)
-    print(C.getPos())
 
     running = True
     while running:

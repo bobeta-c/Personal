@@ -53,6 +53,8 @@ class bean:
         return bean.names
     def getName(self):
         return str(self.name)
+    def canReproduce(self):
+        return bool(self.stomach)
     def reproduce(bean1, bean2, name = None):
         if (random.random() <= bean1.fertility and random.random() <= bean2.fertility):
             if (name and name not in bean.getNames()):
@@ -94,15 +96,28 @@ class bean:
 
 class hungry_bean(bean):
     def pathFind(self, field):
-        closest = None
-        location = None
+        closestFood = None
+        closestHouse = None
+        locationFood = None
+        locationHouse = None
         for x in field.plot:
             if field.plot[x][0] >= 1:
                 dist = ((x[0]-self.getX())**2 + (x[1]-self.getY())**2)**(1/2)
-                if (closest == None) or dist < closest:
-                    closest = dist
-                    location = x
-        return location
+                if (closestFood == None) or dist < closestFood:
+                    closestFood = dist
+                    locationFood = x
+            if field.plot[x][2] > 0:
+                dist = ((x[0]-self.getX())**2 + (x[1]-self.getY())**2)**(1/2)
+                if (closestHouse == None) or dist < closestHouse:
+                    closestHouse = dist
+                    locationHouse = x
+
+        if locationFood:
+            return locationFood
+        elif locationHouse:
+            return locationHouse
+        else:
+            return None
             
 class field:
     def __init__(self, name, sizeX, sizeY):
@@ -112,7 +127,7 @@ class field:
         self.plot = {}
         for x in range(self.sizeX):
             for y in range(self.sizeY):
-                self.plot[(x, y)] = [0, []]
+                self.plot[(x, y)] = [0, [], 0]
     def randomPopulation(self, percentChance = .3):
         for x in self.plot:
             if (random.random() <= percentChance):
@@ -120,6 +135,9 @@ class field:
     def controlledPopulation(self, locations):
         for x in locations:
             self.plot[x][0] += 1
+    def controlledHouse(self, locations):
+        for x in locations:
+            self.plot[x][2] += 1
     def __str__(self):
         string = ''
         for y in range(self.sizeY):
@@ -145,6 +163,8 @@ class field:
                 pygame.draw.rect(screen, (255,0,0), pygame.Rect(location,location2))
             elif self.plot[index][0] > 0:
                 pygame.draw.rect(screen, (0,255,0), pygame.Rect(location,location2))
+            elif self.plot[index][2] > 0:
+                pygame.draw.rect(screen, (0,105,29), pygame.Rect(location,location2))  
             else:
                 pygame.draw.rect(screen, (120,120,120), pygame.Rect(location,location2))
         #pygame.draw.rect(screen, (0,0,0), pygame.Rect((dimensions[0]-20, yIncrement*16), (dimensions[0], yIncrement*17)))
@@ -154,6 +174,17 @@ class field:
             if self.plot[x.getPos()][0] >= 0:
                 self.plot[x.getPos()][0] -= 1
                 x.eat()
+    def beanReproduce(self, beans):
+        for x in self.plot:
+            if len(self.plot[x][1]) > 1:
+                ableToReproduce = True
+                for i in self.plot[x][1][:2]:
+                    if not i.canReproduce():
+                        ableToReproduce = False
+                if ableToReproduce:
+                    bean.reproduce(self.plot[x][1][0],self.plot[x][1][0])
+                    
+
     def beanPopulate(self, beans):
         perSide = int(len(beans)/4)
         side = 0
@@ -234,9 +265,14 @@ def animation():
     A = hungry_bean('a', 1, 1, 1)
     c = field('c', 20, 20)
     c.randomPopulation(.01)
+    c.controlledHouse([(0,0),(19,19)])
     c.beanPopulate([C, A])
+    count = 0
     while C.nextSquare(c, hungry_bean.pathFind):
-        
+        if count == 100:
+            count = 0
+        if count%25 == 0:
+            c.randomPopulation(.001)
         c.display(screen)
         #print(C.getPos())
         c.moveBean(C, C.nextSquare(c, hungry_bean.pathFind))
@@ -251,6 +287,9 @@ def animation():
                     waiting = False
                     break
         c.beanEat([C, A])
+        c.beanReproduce([C,A])
+        count += 1
+    print('Done')
     c.display(screen)
     print(C.getPos())
 

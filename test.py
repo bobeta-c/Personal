@@ -27,5 +27,5 @@ def main():
 
 if __name__ == "__main__":
 
-    print([1,2,3][:2])
+    print((12,12,12)*102)
     main()

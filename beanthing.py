@@ -21,6 +21,7 @@ class bean:
         self.posX = posX
         self.posY = posY
         self.stomach = stomach
+        self.energyReq = 1
         bean.aliveInstances.append(self)
         bean.updateInstances()
     def getX(self):
@@ -66,7 +67,12 @@ class bean:
             newfertility = (bean1.fertility + bean2.fertility)/2
             bean1.offspring += 1
             bean2.offspring += 1
-            return (bean(newname, newheight, newweight, newfertility, bean1, bean2))
+            for x in [bean1, bean2]:
+                if (x.stomach - x.energyReq) > 0:
+                    x.stomach -= x.energyReq
+                else:
+                    x.stomach = 0
+            return (bean(newname, newheight, newweight, newfertility, bean1, bean2, posX = bean1.posX, posY = bean1.posY))
         return None
     def pathFind(self, field):
         pass
@@ -160,7 +166,12 @@ class field:
             location = (index[0]*xIncrement, index[1]*yIncrement)
             location2 = (location[0]+xIncrement,location[1]+xIncrement)
             if len(self.plot[index][1]) > 0:
-                pygame.draw.rect(screen, (255,0,0), pygame.Rect(location,location2))
+                lengthOfPlot = len(self.plot[index][1])
+                if (25*lengthOfPlot <255):
+                    color = (25*lengthOfPlot,12*lengthOfPlot,4*lengthOfPlot)
+                else:
+                    color = (255, 255, 255)
+                pygame.draw.rect(screen, (color), pygame.Rect(location,location2))
             elif self.plot[index][0] > 0:
                 pygame.draw.rect(screen, (0,255,0), pygame.Rect(location,location2))
             elif self.plot[index][2] > 0:
@@ -183,7 +194,7 @@ class field:
                         ableToReproduce = False
                 if ableToReproduce:
                     bean.reproduce(self.plot[x][1][0],self.plot[x][1][0])
-                    
+        self.updateLocs(bean.aliveInstances)
 
     def beanPopulate(self, beans):
         perSide = int(len(beans)/4)
@@ -206,7 +217,7 @@ class field:
             if beans[x] not in beansUsed:
                 beans[x].posX, beans[x].posY = random.randrange(0, self.sizeX), random.randrange(0, self.sizeY)
                 beansUsed.append(beans[x])
-        self.updateLocs(beans)
+        self.updateLocs(bean.aliveInstances)
     def moveBean(self, beanUsed, newPos):
         beanUsed.posX = newPos[0]
         beanUsed.posY = newPos[1]
@@ -215,11 +226,13 @@ class field:
         for x in beans:
             if not x in self.plot[(x.posX, x.posY)][1]:
                 self.plot[x.posX, x.posY][1].append(x)
-        
+        indexes = []
         for x in self.plot:
             for y in range(len(self.plot[x][1])):
-                if issubclass(type(self.plot[x][1][y]), bean) and self.plot[x][1][y].getPos() != x:  
-                    self.plot[x][1].remove(self.plot[x][1][y])
+                if issubclass(type(self.plot[x][1][y]), bean) and self.plot[x][1][y].getPos() != x: 
+                    indexes.append((x, self.plot[x][1][y]))
+        for i in indexes:
+            self.plot[i[0]][1].remove(i[1])
 
 
 
@@ -239,7 +252,7 @@ def mainFunc():
 
     C = hungry_bean('c', 1, 1, 1)
     c = field('c', 20, 20)
-    c.randomPopulation(.01)
+    c.randomPopulation(.002)
     c.beanPopulate([C])
     print(C.getPos())
     while C.nextSquare(c, hungry_bean.pathFind) != C.getPos():
@@ -261,18 +274,20 @@ def animation():
     screen.fill((0,120,255))
     screen.blit(image, (240-32,180-32))
 
-    C = hungry_bean('c', 1, 1, 1)
-    A = hungry_bean('a', 1, 1, 1)
+    C = hungry_bean('c', 1, 1, 1, stomach=1)
+    A = hungry_bean('a', 1, 1, 1, stomach=1)
     c = field('c', 20, 20)
-    c.randomPopulation(.01)
-    c.controlledHouse([(0,0),(19,19)])
-    c.beanPopulate([C, A])
+    #c.randomPopulation(.01)
+    c.controlledHouse([(10,10)])
+    c.beanPopulate(bean.aliveInstances)
     count = 0
-    while C.nextSquare(c, hungry_bean.pathFind):
+    playing = True
+    while playing:
         if count == 100:
             count = 0
         if count%25 == 0:
-            c.randomPopulation(.001)
+            pass
+            #c.randomPopulation(.002)
         c.display(screen)
         #print(C.getPos())
         c.moveBean(C, C.nextSquare(c, hungry_bean.pathFind))
@@ -281,13 +296,16 @@ def animation():
         while waiting:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    waiting = False
+                    playing = False
                     pygame.quit()
                     #sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     waiting = False
                     break
-        c.beanEat([C, A])
-        c.beanReproduce([C,A])
+        c.beanEat(bean.aliveInstances)
+        c.beanReproduce(bean.aliveInstances)
+        print(bean.aliveInstances)
         count += 1
     print('Done')
     c.display(screen)

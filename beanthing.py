@@ -236,9 +236,10 @@ class field:
                 beansUsed.append(beans[x])
         self.updateLocs(bean.aliveInstances)
     def moveBean(self, beanUsed, newPos):
-        beanUsed.posX = newPos[0]
-        beanUsed.posY = newPos[1]
-        self.updateLocs([beanUsed])
+        if newPos in self.plot:
+            beanUsed.posX = newPos[0]
+            beanUsed.posY = newPos[1]
+            self.updateLocs([beanUsed])
     def updateLocs(self, beans):
         for x in beans:
             if not x in self.plot[(x.posX, x.posY)][1]:
@@ -254,33 +255,12 @@ class field:
 
 
 def mainFunc():
-    A = hungry_bean('a', 3, 1, 1)
-    B = hungry_bean('b', 2.6, 1, 1)
-
-    for x in range(11):
-        bean.reproduce(A, B)
-    #a = field('a', 10, 10)
-    #a.randomPopulation(.2)
-    #a.beanPopulate(bean.getBeans())
-
-    #print(a)
-    #print(A.getX(), A.getY())
-    #print(A.pathFind(a))
-
-    C = hungry_bean('c', 1, 1, 1)
-    c = field('c', 20, 20)
-    c.randomPopulation(.002)
-    c.beanPopulate([C])
-    print(C.getPos())
-    while C.nextSquare(c, hungry_bean.pathFind) != C.getPos():
-        print(c)
-        print(C.getPos())
-        c.moveBean(C, C.nextSquare(c, hungry_bean.pathFind))
-    #print(c)
+    pass
 
 def animation():
     pygame.init()
-    logo = pygame.image.load("logo32x32.png")
+    filePath = "/home/smash/Documents/git_repos/private/logo32x32.png"
+    logo = pygame.image.load(filePath)
     image = logo
 
     pygame.display.set_icon(logo)
@@ -291,8 +271,8 @@ def animation():
     screen.fill((0,120,255))
     screen.blit(image, (240-32,180-32))
 
-    C = bozo_bean('c', 1, 1, 1, stomach=1)
-    A = bozo_bean('a', 1, 1, 1, stomach=1)
+    C = hungry_bean('c', 1, 1, 1, stomach=1)
+    A = hungry_bean('a', 1, 1, 1, stomach=1)
     c = field('c', 20, 20)
     c.randomPopulation(.01)
     c.controlledHouse([(10,10)])

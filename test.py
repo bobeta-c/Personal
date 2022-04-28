@@ -25,10 +25,11 @@ def main():
                 sys.exit()
 
 
+def avg(*args):
+    for x in args:
+        print(x)
+
 if __name__ == "__main__":
 
-    b = int(1)
-
-    a = type(b)(2)
-    print(type(a))
-    main()
+    print(bool({}))
+    #main()

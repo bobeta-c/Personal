@@ -268,6 +268,7 @@ def animation():
 
 
     screen = pygame.display.set_mode((400, 400))
+    
     screen.fill((0,120,255))
     screen.blit(image, (240-32,180-32))
 

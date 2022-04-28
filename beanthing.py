@@ -294,7 +294,7 @@ def animation():
     C = bozo_bean('c', 1, 1, 1, stomach=1)
     A = bozo_bean('a', 1, 1, 1, stomach=1)
     c = field('c', 20, 20)
-    #c.randomPopulation(.01)
+    c.randomPopulation(.01)
     c.controlledHouse([(10,10)])
     c.beanPopulate(bean.aliveInstances)
     count = 0
@@ -303,10 +303,8 @@ def animation():
         if count == 100:
             count = 0
         if count%25 == 0:
-            pass
-            #c.randomPopulation(.002)
+            c.randomPopulation(.002)
         c.display(screen)
-        #print(C.getPos())
         for individualBean in bean.aliveInstances:
             c.moveBean(individualBean, individualBean.nextSquare(c, type(individualBean).pathFind))
         waiting = True

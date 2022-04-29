@@ -23,7 +23,7 @@ class organism:
     def getName(self):
         return self.name
     def getPos(self):
-        return self.position[:]
+        return (self.position[0], self.position[1])
     def move(self, newPosition):
         self.position = newPosition
 
@@ -39,6 +39,16 @@ class tileInfo:
             self.baseData['buildings'] = []
     def setColor(self, key, color):
         self.colorCodes[key] = color
+    def getNkeys(self, n):
+        keys = []
+        index = 0
+        for x in self.baseData:
+            index += 1
+            if n >= index:
+                keys.append(x)
+            else:
+                return keys
+        return keys
     def getColor(self, key):
         return self.colorCodes[key]
     def cpData(self):
@@ -51,14 +61,26 @@ class world:
         self.dimensions = dimensions
         self.plot = {}
         self.data = data
-        for x in self.dimensions[0]:
-            for y in self.dimensions[1]:
+        for x in range(self.dimensions[0]):
+            for y in range(self.dimensions[1]):
                 self.plot[(x,y)] = self.data.cpData()
     def getDimensions(self):
         return self.dimensions[:]
-    def __str__(self):
+    def getStr(self, key1, key2):
         string = ''
-        
+        for y in range(self.getDimensions()[1]):
+            for x in range(self.getDimensions()[0]):
+                location = (x,self.getDimensions()[1]-y-1)
+                string += '['
+                string += str(self.plot[location][key1])
+                string += ' ' 
+                string += str(self.plot[location][key2])
+                string += ']'
+            string += '\n'
+        return string
+    def __str__(self):
+        keys = self.data.getNkeys(2)
+        return self.getStr(keys[0], keys[1])
     def updateLocs(self, organisms):
         key = organisms[0].getKey()
         for i in organisms:
@@ -75,4 +97,10 @@ class world:
             self.plot[i[0]][key].remove(i[1])
 
 
-    
+def main():
+    Asher = organism('Asher')
+    Earth = world('earth', data = tileInfo(organism = [], food = []))
+    Earth.updateLocs(organism.organismsAlive)
+    print(Earth.getStr())
+
+main()

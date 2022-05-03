@@ -1,9 +1,15 @@
 from unicodedata import name
-
+def bases(cls):
+    #yields all classes used by cls except object class
+    if cls != object:
+        yield cls
+        for direct_base in cls.__bases__:
+            for base in bases(direct_base):
+                yield base
 
 class organism:
-    organisms = []
-    organismsAlive = []
+    instances = []
+    aliveInstances = []
     def __init__(self, name = 'NaN', dimensions = (1,1,1), parents = (None, None), position = [0,0], data = {}, alive = True):
             self.name = name
             self.dimensions = dimensions
@@ -11,21 +17,31 @@ class organism:
             self.position = position
             self.data = data
             self.alive = alive
-            organism.organisms.append(self)
-            if self.alive == True:
-                organism.organismsAlive.append(self)
-            self.key = 'organism'
+            for x in bases(type(self)):
+                x.instances.append(self)
+                if self.alive == True:
+                    x.aliveInstances.append(self)
+            self.key = self.__class__.__name__
     def getKey(self):
         return self.key
     def kill(self):
         self.alive == False
-        organism.organismsAlive.remove(self)
+        for x in bases(type(self)):
+            x.aliveInstances.remove(self)
     def getName(self):
         return self.name
     def getPos(self):
         return (self.position[0], self.position[1])
     def move(self, newPosition):
         self.position = newPosition
+    def __str__(self):
+        return self.name
+class bean(organism):
+    instances = []
+    aliveInstances = []
+class tree(organism):
+    instances = []
+    aliveInstances = []
 
 class tileInfo:
     def __init__(self, **args):
@@ -52,7 +68,10 @@ class tileInfo:
     def getColor(self, key):
         return self.colorCodes[key]
     def cpData(self):
-        return self.baseData
+        cpOfData = self.baseData.copy()
+        for x in cpOfData:
+            cpOfData[x] = self.baseData[x].copy()
+        return cpOfData
 
 
 class world:
@@ -86,22 +105,21 @@ class world:
         for i in organisms:
             if not i in self.plot[i.getPos()][i.getKey()]:
                 self.plot[i.getPos()][i.getKey()].append(i)
-
+        print(self.plot)
         indexes = []
-        
         for i in self.plot:
             for x in self.plot[i][key]:
                 if x.getPos() != i:
                     indexes.append((i, x))
-                    print(i, x)
         for i in indexes:
             self.plot[i[0]][key].remove(i[1])
 
 
 def main():
     Asher = organism('Asher')
-    Earth = world('earth', data = tileInfo(organism = [], food = []))
-    Earth.updateLocs(organism.organismsAlive)
-    print(Earth.getStr())
+    beany = bean('beany')
+    Earth = world('earth', data = tileInfo(bean = [], tree = []))
+    Earth.updateLocs(organism.aliveInstances)
+    print(Earth)
 
 main()

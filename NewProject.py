@@ -93,6 +93,7 @@ class world:
             for x in self.plot[i][key]:
                 if x.getPos() != i:
                     indexes.append((i, x))
+                    print(i, x)
         for i in indexes:
             self.plot[i[0]][key].remove(i[1])
 

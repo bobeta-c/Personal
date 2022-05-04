@@ -1,4 +1,5 @@
 from unicodedata import name
+import hashlib
 def bases(cls):
     #yields all classes used by cls except object class
     if cls != object:
@@ -11,6 +12,12 @@ def multElements(iterable):
     for x in iterable:
         sum *= x
     return x
+def hashStringtoColor(string):
+    s = hashlib.sha256(string.encode())
+    l = hashlib.sha1(string.encode())
+    print(l)
+    print(s)
+
 
 class organism:
     instances = []
@@ -29,10 +36,12 @@ class organism:
                 if self.alive == True:
                     x.aliveInstances.append(self)
             self.key = self.__class__.__name__
+            self.color = hashStringtoColor(self.key)
     def getKey(self):
         return self.key
     def kill(self):
-        self.alive == False
+        print(f'killing {self.name}')
+        self.alive = False
         for x in bases(type(self)):
             x.aliveInstances.remove(self)
     def isAlive(self):
@@ -115,25 +124,32 @@ class world:
         keys = self.data.getNkeys(2)
         return self.getStr(keys[0], keys[1])
     def updateLocs(self, organisms):
-        key = organisms[0].getKey()
+        keys = []
         for i in organisms:
-            if not i in self.plot[i.getPos()][i.getKey()]:
+            if i.getKey() not in keys:
+                keys.append(i.getKey())
+        for i in organisms:
+            if not i in self.plot[i.getPos()][i.getKey()] and i.isAlive():
                 self.plot[i.getPos()][i.getKey()].append(i)
-        print(self.plot)
         indexes = []
         for i in self.plot:
-            for x in self.plot[i][key]:
-                if x.getPos() != i or x.isAlive() == False:
-                    indexes.append((i, x))
+            for key in keys:
+                for x in self.plot[i][key]:
+                    if x.getPos() != i or x.isAlive() == False:
+                        indexes.append((i, x, key))
         for i in indexes:
-            self.plot[i[0]][key].remove(i[1])
+            self.plot[i[0]][i[2]].remove(i[1])
 
 
 def main():
-    Tree = tree('Asher')
+    Tree = tree('tree')
     beany = bean('beany')
     Earth = world('earth', data = tileInfo(bean = [], tree = []))
-    Earth.updateLocs(organism.aliveInstances)
+    Earth.updateLocs(organism.instances)
+    print(Earth)
+    beany.consume(Tree)
+    Earth.updateLocs(organism.instances)
     print(Earth)
 
-main()
+#main()
+hashStringtoColor('a')

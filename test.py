@@ -31,5 +31,6 @@ def avg(*args):
 
 if __name__ == "__main__":
 
-    print(bool({}))
+    mydict = {1:1,2:3,3:12,4:12,5:123,6:1,7:0}
+    print(list(mydict.keys())[:4])
     #main()

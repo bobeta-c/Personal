@@ -1,5 +1,10 @@
+from operator import truediv
 from unicodedata import name
 import hashlib
+import pygame
+import os
+
+
 def bases(cls):
     #yields all classes used by cls except object class
     if cls != object:
@@ -14,9 +19,8 @@ def multElements(iterable):
     return x
 def hashStringtoColor(string):
     s = hashlib.sha256(string.encode())
-    l = hashlib.sha1(string.encode())
-    print(l)
-    print(s)
+    hash = s.digest()
+    return (hash[0], hash[1], hash[2])
 
 
 class organism:
@@ -50,6 +54,8 @@ class organism:
         return self.name
     def getPos(self):
         return (self.position[0], self.position[1])
+    def getColor(self):
+        return self.color
     def move(self, newPosition):
         self.position = newPosition
     def consume(self, organism):
@@ -123,6 +129,30 @@ class world:
     def __str__(self):
         keys = self.data.getNkeys(2)
         return self.getStr(keys[0], keys[1])
+    def moveOrganism(self, organism, newLoc):
+        organism.move(newLoc)
+        self.updateLocs([organism])
+    def updateDisplay(self, screen):
+        dimensions = screen.get_size()
+        xIncrement = dimensions[0]//self.getDimensions()[0]
+        yIncrement = dimensions[1]//self.getDimensions()[1]
+        keys = list(self.plot[(0,0)].keys())
+        if len(keys) > 4:
+            keys = keys[:4]
+        xHalfIncrement = xIncrement//2
+        yHalfIncrement = yIncrement//2
+        for i in self.plot:
+            index = i
+            location = (index[0]*xIncrement, index[1]*yIncrement)
+            locationType0 = (location, (location[0] + xHalfIncrement, location[1] + yHalfIncrement))
+            locationType1 = ((location[0]+xHalfIncrement, location[1]), (location[0]+xIncrement, location[1] + yHalfIncrement))
+            locationType2 = ((location[0], location[1] + yHalfIncrement), (location[0] +xHalfIncrement, location[1]+yIncrement))
+            locationType3 = ((location[0] +xHalfIncrement, location[1] +yHalfIncrement), (location[0], xIncrement,location[1]+yIncrement))
+            locations= [locationType0,locationType1,locationType2,locationType3]
+            
+            for keyIndex in range(len(keys)):
+                if len(self.plot[index][keys[keyIndex]]) > 0:
+                    pygame.draw.rect(screen, hashStringtoColor(keys[keyIndex]), pygame.Rect(locations[keyIndex]))
     def updateLocs(self, organisms):
         keys = []
         for i in organisms:
@@ -143,6 +173,9 @@ class world:
 
 def main():
     Tree = tree('tree')
+    for x in range(5):
+        for y in range(5):
+            bean(position = [x,y])
     beany = bean('beany')
     Earth = world('earth', data = tileInfo(bean = [], tree = []))
     Earth.updateLocs(organism.instances)
@@ -150,6 +183,33 @@ def main():
     beany.consume(Tree)
     Earth.updateLocs(organism.instances)
     print(Earth)
+    Earth.moveOrganism(beany, (4,4))
+    print(Earth)
+    display(Earth)
 
-#main()
-hashStringtoColor('a')
+def display(world, size = (1000,1000)):
+    pygame.init()
+    cd = os.getcwd()
+    filePath = cd + '\logo32x32.png'
+    logo = pygame.image.load(filePath)
+    pygame.display.set_icon(logo)
+    screen = pygame.display.set_mode(size)
+    
+    
+    screen.fill((255,255,255))
+    screen.blit(logo, (240-32,180-32))
+    pygame.display.flip()
+
+    playing = True
+    while playing:
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                print('dispalying')
+                world.updateDisplay(screen)
+                pygame.display.flip()
+            elif event.type == pygame.QUIT:
+                playing = False
+        
+
+
+main()

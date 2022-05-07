@@ -2,6 +2,7 @@ from asyncio import wait_for
 from logging import raiseExceptions
 import random
 import pygame
+import os
 import sys
 
 class bean:
@@ -259,7 +260,8 @@ def mainFunc():
 
 def animation():
     pygame.init()
-    filePath = "/home/smash/Documents/git_repos/private/logo32x32.png"
+    cd = os.getcwd()
+    filePath = cd + '/logo32x32.png'
     logo = pygame.image.load(filePath)
     image = logo
 

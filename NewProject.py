@@ -3,6 +3,7 @@ from unicodedata import name
 import hashlib
 import pygame
 import os
+import random
 
 
 def bases(cls):
@@ -26,6 +27,11 @@ def hashStringtoColor(string):
 class organism:
     instances = []
     aliveInstances = []
+    @classmethod
+    def getKey(cls):
+        return cls.__name__
+
+    #HOW DO I MAKE THIS AUTOMATED AMONG ALL NEWLY CREATED CLASSES?
     def __init__(self, name = 'NaN', dimensions = (1,1,1), parents = (None, None), position = [0,0], data = {}, alive = True, energy = 0):
             self.name = name
             self.dimensions = dimensions
@@ -39,10 +45,7 @@ class organism:
                 x.instances.append(self)
                 if self.alive == True:
                     x.aliveInstances.append(self)
-            self.key = self.__class__.__name__
-            self.color = hashStringtoColor(self.key)
-    def getKey(self):
-        return self.key
+            self.color = hashStringtoColor(self.getKey())
     def kill(self):
         print(f'killing {self.name}')
         self.alive = False
@@ -132,7 +135,13 @@ class world:
     def moveOrganism(self, organism, newLoc):
         organism.move(newLoc)
         self.updateLocs([organism])
-    def updateDisplay(self, screen):
+    def randomPopulate(self, organismType, percentChance):
+        for index in self.plot:
+            if random.random() <= percentChance:
+                temp = organismType(position = list(index))
+                self.plot[index][organismType.getKey()].append(temp)
+        self.updateLocs(organismType.instances)
+    def updateDisplay(self, screen, background):
         dimensions = screen.get_size()
         xIncrement = dimensions[0]//self.getDimensions()[0]
         yIncrement = dimensions[1]//self.getDimensions()[1]
@@ -147,12 +156,15 @@ class world:
             locationType0 = (location, (location[0] + xHalfIncrement, location[1] + yHalfIncrement))
             locationType1 = ((location[0]+xHalfIncrement, location[1]), (location[0]+xIncrement, location[1] + yHalfIncrement))
             locationType2 = ((location[0], location[1] + yHalfIncrement), (location[0] +xHalfIncrement, location[1]+yIncrement))
-            locationType3 = ((location[0] +xHalfIncrement, location[1] +yHalfIncrement), (location[0], xIncrement,location[1]+yIncrement))
+            locationType3 = ((location[0] +xHalfIncrement, location[1] +yHalfIncrement), (location[0] + xIncrement,location[1]+yIncrement))
             locations= [locationType0,locationType1,locationType2,locationType3]
-            
-            for keyIndex in range(len(keys)):
-                if len(self.plot[index][keys[keyIndex]]) > 0:
+
+            for keyIndex in range(4):
+                if keyIndex < len(keys) and len(self.plot[index][keys[keyIndex]]) > 0:
                     pygame.draw.rect(screen, hashStringtoColor(keys[keyIndex]), pygame.Rect(locations[keyIndex]))
+                else:
+                    pygame.draw.rect(screen, background, pygame.Rect(locations[keyIndex]))
+
     def updateLocs(self, organisms):
         keys = []
         for i in organisms:
@@ -173,43 +185,47 @@ class world:
 
 def main():
     Tree = tree('tree')
-    for x in range(5):
-        for y in range(5):
-            bean(position = [x,y])
     beany = bean('beany')
     Earth = world('earth', data = tileInfo(bean = [], tree = []))
     Earth.updateLocs(organism.instances)
-    print(Earth)
+    #print(Earth)
     beany.consume(Tree)
-    Earth.updateLocs(organism.instances)
-    print(Earth)
+    #print(Earth)
     Earth.moveOrganism(beany, (4,4))
-    print(Earth)
+    #print(Earth)
     display(Earth)
 
 def display(world, size = (1000,1000)):
     pygame.init()
     cd = os.getcwd()
-    filePath = cd + '\logo32x32.png'
+    filePath = cd + '/logo32x32.png'
     logo = pygame.image.load(filePath)
     pygame.display.set_icon(logo)
     screen = pygame.display.set_mode(size)
     
-    
-    screen.fill((255,255,255))
+    background = (0,0,0)
+    screen.fill(background)
     screen.blit(logo, (240-32,180-32))
     pygame.display.flip()
 
     playing = True
+    count = 0
+    world.updateLocs(organism.instances)
     while playing:
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
-                print('dispalying')
-                world.updateDisplay(screen)
+                ('displaying')
+                world.updateDisplay(screen, background)
                 pygame.display.flip()
+                count += 1
+                if count%10 == 0:
+                    world.randomPopulate(tree, .2)
+                    print('populating')
+
+                #print(pygame.mouse.get_pos())
             elif event.type == pygame.QUIT:
                 playing = False
-        
+    pygame.quit()
 
 
 main()

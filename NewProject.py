@@ -4,7 +4,7 @@ import hashlib
 import pygame
 import os
 import random
-
+import time
 
 def bases(cls):
     #yields all classes used by cls except object class
@@ -30,6 +30,7 @@ class organism:
     @classmethod
     def getKey(cls):
         return cls.__name__
+    
 
     #HOW DO I MAKE THIS AUTOMATED AMONG ALL NEWLY CREATED CLASSES?
     def __init__(self, name = 'NaN', dimensions = (1,1,1), parents = (None, None), position = [0,0], data = {}, alive = True, energy = 0):
@@ -65,6 +66,8 @@ class organism:
         organism.kill()
         self.energy += organism.energyStore
         organism.energyStore = 0
+    def reproduce(self, mate, traits = None):
+        self
     def __str__(self):
         return self.name
     
@@ -132,15 +135,19 @@ class world:
     def __str__(self):
         keys = self.data.getNkeys(2)
         return self.getStr(keys[0], keys[1])
-    def moveOrganism(self, organism, newLoc):
-        organism.move(newLoc)
-        self.updateLocs([organism])
     def randomPopulate(self, organismType, percentChance):
         for index in self.plot:
             if random.random() <= percentChance:
                 temp = organismType(position = list(index))
                 self.plot[index][organismType.getKey()].append(temp)
         self.updateLocs(organismType.instances)
+    def moveOrganism(self, organism, newLocation):
+        if newLocation in self.plot:
+            organism.move(newLocation)
+        else:
+            return 12
+        self.updateLocs([organism])
+
     def updateDisplay(self, screen, background):
         dimensions = screen.get_size()
         xIncrement = dimensions[0]//self.getDimensions()[0]

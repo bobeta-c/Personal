@@ -88,7 +88,9 @@ class organism(thing):
         self.energy += organism.energyStore
         organism.energyStore = 0
     def reproduce(self, mate, traits = None):
-        self
+        self.energy -= 1
+        mate.energy -= 1
+        return type(self)(parents = (self, mate),*traits)
     def __str__(self):
         return self.name
     
@@ -228,6 +230,7 @@ class world:
 def main():
     Tree = tree('tree')
     beany = bean('beany')
+    bean2 = beany.reproduce(beany, ['b'])
     Earth = world('earth', data = tileInfo(bean = [], tile = [], tree = []), dimensions = (100,100))
     Earth.updateLocs(organism.instances)
     #print(Earth)

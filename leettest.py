@@ -73,29 +73,30 @@ class Solution:
     def mergeTwoLinkedLists(self, list1, list2):
         out_list = ListNode(None)
         current_node = out_list
-        while list1.val or list2.val:
+        while list1.next or list2.next:
             if list1.val < list2.val:
                 if not out_list.val:
                     out_list.val = list1.val
                 else:
                     current_node.next = ListNode(list1.val)
+                    current_node = current_node.next
                 list1 = list1.next
             else:
                 if not out_list.val:
                     out_list.val = list2.val
                 else:
                     current_node.next = ListNode(list2.val)
+                    current_node = current_node.next
                 list2 = list2.next
         return out_list
 
 
 
 
-list1 = ListNode(0, ListNode(1, ListNode(2)))
-list2 = ListNode(0, ListNode(2, ListNode(5)))
-solution = (Solution.mergeTwoLinkedLists(None, list1, list2))
-print(solution.val)
-solution = list1
+lt1 = ListNode(0, ListNode(1, ListNode(2)))
+lt2 = ListNode(0, ListNode(2, ListNode(5)))
+solution = (Solution.mergeTwoLinkedLists(None, lt1, lt2))
+print(solution.val, solution.next)
 
 while solution.next:
     print(solution.val)

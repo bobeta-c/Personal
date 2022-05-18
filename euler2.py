@@ -41,4 +41,37 @@ def pokerWins():
                 wonByOne += 1
         
     return wonByOne
+
+def bouncyNumber(percent = .99):
+    bouncyNumbers = 0
+    totalNumbers = 100
+    index = 100
+    while bouncyNumbers/totalNumbers < percent:
+        index += 1
+        totalNumbers += 1
+        string = str(index)
+        inc = True
+        dec = True
+        for num in range(len(string)-1):
+            if int(string[num]) > int(string[num+1]):
+                inc = False
+            if int(string[num]) < int(string[num+1]):
+                dec = False
+            if not inc and not dec:
+                bouncyNumbers += 1
+                break
+    return index
+
+
+def isPalindromic(num):
+    num = str(num)
+    if num == num[::-1]:
+        return True
+    return False
+def PalindromicSums(max = 10**8):
+    index = max**(1/2)
+    while index:
+
+
+
             

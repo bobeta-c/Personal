@@ -1,3 +1,8 @@
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
 class Solution:
     def intToRoman(self, num: int) -> str:
         data = {1:'I', 4:'IV', 5:'V', 9:'IX', 10: 'X', 40:'XL', 50:'L', 90:'XC', 100:'C', 400:'CD', 500:'D', 900:'CM', 1000 : 'M'}
@@ -49,25 +54,51 @@ class Solution:
                 #print(chunkStr)
             string = chunkStr+places[index]+ " " +string if chunkStr else string
         return string.strip()
-    def criticalConnections(self, n: int, connections):
-        workingNums = []
-        criticals = []
-        for x in range(n):
-            if not isPath(x,x,connections):
-                criticals.append()
-        return criticals
-def isPath(start, stop, connections):
-    for x in range(len(connections)):
-        if start in connections[x]:
-            index = connections[x].index(start)
-            other = 1 if index == 0 else 0
-            if stop == connections[other]:
-                return True
-            options = isPath(connections[x][other], stop, connections[0:x]+connections[x+1:])
-            if options:
-                return True
-    return False
-#print(isPath(0,5,[[0,1],[1,2],[2,1],[2,3],[3,1],[3,4],[2,5]]))
-print(Solution.criticalConnections(None, n = 1000, connections = [[0,1]]))
+    def mergeTwoLists(self, list1, list2):
+        out_list = []
+        el1 = list1.pop(0) if len(list1) else None
+        el2 = list2.pop(0) if len(list2) else None
+        while len(list1) or len(list2):
+            if el1 and (el2 == None or el1 < el2):
+                out_list.append(el1)
+                el1 = list1.pop(0)
+            else:
+                out_list.append(el2)
+                el2 = list2.pop(0)
+        if el1 and el2:
+            out_list = out_list + [el1,el2] if el1 < el2 else out_list + [el2, el1]
+        else:
+            out_list.append(el1 if el1 else el2)
+        return out_list
+    def mergeTwoLinkedLists(self, list1, list2):
+        out_list = ListNode(None)
+        current_node = out_list
+        while list1.val or list2.val:
+            if list1.val < list2.val:
+                if not out_list.val:
+                    out_list.val = list1.val
+                else:
+                    current_node.next = ListNode(list1.val)
+                list1 = list1.next
+            else:
+                if not out_list.val:
+                    out_list.val = list2.val
+                else:
+                    current_node.next = ListNode(list2.val)
+                list2 = list2.next
+        return out_list
+
+
+
+
+list1 = ListNode(0, ListNode(1, ListNode(2)))
+list2 = ListNode(0, ListNode(2, ListNode(5)))
+solution = (Solution.mergeTwoLinkedLists(None, list1, list2))
+print(solution.val)
+solution = list1
+
+while solution.next:
+    print(solution.val)
+    solution = solution.next
 
 

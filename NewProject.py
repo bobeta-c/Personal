@@ -46,8 +46,10 @@ class thing:
         self.position = newPosition
 class tile(thing):
     hasColor = True
-    def __init__(self, dimensions = (1,1,1), position = [0,0], data = {}, color = (0,0,0)):
+    def __init__(self, dimensions = (1,1,1), position = [0,0], data = {}, type = 'base', color = (0,0,0)):
         super().__init__(dimensions, position, data)
+        self.color = color
+        
     
     
 class organism(thing):

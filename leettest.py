@@ -95,17 +95,20 @@ class Solution:
                     current_node = current_node.next
                 list2 = list2.next
         return out_list
+    def removeElement(self, nums: list[int], val: int) -> int:
+        while val in nums:
+            nums.remove(val)
+        return len(nums), nums
 
 
+print(Solution.removeElement(None, [1,2,4,2,2,2,3,3,1], 1))
+# lt1 = ListNode(0, ListNode(1, ListNode(2)))
+# lt2 = ListNode(0, ListNode(2, ListNode(5)))
+# solution = (Solution.mergeTwoLinkedLists(None, lt1, lt2))
+# print(solution.val, solution.next)
 
-
-lt1 = ListNode(0, ListNode(1, ListNode(2)))
-lt2 = ListNode(0, ListNode(2, ListNode(5)))
-solution = (Solution.mergeTwoLinkedLists(None, lt1, lt2))
-print(solution.val, solution.next)
-
-while solution.next:
-    print(solution.val)
-    solution = solution.next
+# while solution.next:
+#     print(solution.val)
+#     solution = solution.next
 
 

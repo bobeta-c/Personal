@@ -102,15 +102,28 @@ class organism(thing):
         self.energy -= 1
         mate.energy -= 1
         return type(self)(parents = (self, mate),*traits)
+    def mate(self, mate, area, traits = None):
+        if self.getPos() == mate.getPos() and self.energy >= 1 and mate.energy >= 1 and area.plot[self.getPos()][house]:
+            self.reproduce(mate, traits)
     def __str__(self):
         return self.name
-    
+    def interact(self, organismtype):
+        pass
 class bean(organism):
     instances = []
     aliveInstances = []
     def pathFind(self, area, goal = 'tree'):
         assert type(area) == world
         return (random.randint(0, area.getDimensions()[0]), random.randint(0, area.getDimensions()[1]))
+    def interact(self, thing1, area):
+        print(f'interacting {self} and {thing1}')
+        if self == thing:
+            return
+        if type(thing1)== tree:
+            self.consume(thing1)
+        elif type(thing1) == bean:
+            self.mate(thing1, area)
+
 
 class hungryBean(bean):
     key = bean.getKey()
@@ -140,7 +153,7 @@ class matingBean(bean):
     def pathFind(self,area, goal1 = 'tree', goal2 = 'house'):
         assert type(area) == world
         radius = 0
-        goal = goal1 if self.energy >= 1 else goal2
+        goal = goal1 if self.energy < 1 else goal2
         checked = []
         found = False
         while not found and (radius <= area.getDimensions()[0] or radius <= area.getDimensions()[1]):
@@ -281,6 +294,11 @@ class world:
                         break
                 if not worked:
                     pygame.draw.rect(screen, background, pygame.Rect(locationUsed))
+    def tryActions(self, organisms):
+        for org in organisms:
+            for x in self.plot[org.getPos()]:
+                for y in self.plot[org.getPos()][x]:
+                    org.interact(y, self)
 
     def updateLocs(self, organisms):
         keys = []
@@ -341,17 +359,15 @@ def display(world, size = (1000,1000)):
                 if count%5 == 0:
                     world.randomPopulate(tree, .002)
                     print('populating')
-
-                print(type(world))
+                world.tryActions(bean.aliveInstances)
                 moveOrganismsGradual(world, bean.aliveInstances)
             elif event.type == pygame.QUIT:
                 playing = False
     pygame.quit()
 def moveOrganismsGradual(area, organisms):
-    print(type(area))
     assert type(area) == world
     for x in organisms:
-        area.moveOrganismGradual(x,x.pathFind(world))
+        area.moveOrganismGradual(x,x.pathFind(area))
 
 main()
 LOG.close()

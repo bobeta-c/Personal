@@ -137,10 +137,28 @@ class matingBean(bean):
     key = bean.getKey()
     instances = []
     aliveInstances = []
+    def pathFind(self,area, goal1 = 'tree', goal2 = 'house'):
+        assert type(area) == world
+        radius = 0
+        goal = goal1 if self.energy >= 1 else goal2
+        checked = []
+        found = False
+        while not found and (radius <= area.getDimensions()[0] or radius <= area.getDimensions()[1]):
+            minx = self.getPos()[0] - radius if self.getPos()[0] - radius >= 0 else 0
+            miny = self.getPos()[1] - radius if self.getPos()[1] - radius >= 0 else 0
+            maxx = self.getPos()[0] + radius if self.getPos()[0] + radius <= area.getDimensions()[0] else area.getDimensions()[0]
+            maxy = self.getPos()[1] + radius if self.getPos()[1] + radius <= area.getDimensions()[1] else area.getDimensions()[1]
+            for x in range(minx, maxx):
+                for y in range(miny,maxy):
+                    if area.plot[(x,y)][goal]:
+                        return (x,y)
+                    checked.append((x,y))
+            radius += 1
+        return self.getPos()
 class tree(organism):
     instances = []
     aliveInstances = []
-
+    
 class tileInfo:
     def __init__(self, **args):
         self.baseData = {}
@@ -285,6 +303,7 @@ class world:
 def main():
     Tree = tree('tree')
     beany = hungryBean('beany')
+    bobet = matingBean('bobet')
     Hut = house(position = [20,20], color = house.classColor)
     Earth = world('earth', data = tileInfo(bean = [], house = [], tree = []), dimensions = (40,40))
     Earth.updateLocs(organism.instances)
@@ -323,12 +342,16 @@ def display(world, size = (1000,1000)):
                     world.randomPopulate(tree, .002)
                     print('populating')
 
-                #print(pygame.mouse.get_pos())
-                world.moveOrganismGradual(bean.aliveInstances[0], bean.aliveInstances[0].pathFind(world))
+                print(type(world))
+                moveOrganismsGradual(world, bean.aliveInstances)
             elif event.type == pygame.QUIT:
                 playing = False
     pygame.quit()
-
+def moveOrganismsGradual(area, organisms):
+    print(type(area))
+    assert type(area) == world
+    for x in organisms:
+        area.moveOrganismGradual(x,x.pathFind(world))
 
 main()
 LOG.close()

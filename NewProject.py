@@ -1,11 +1,13 @@
 from operator import truediv
+from turtle import pos
 from unicodedata import name
 import hashlib
 import pygame
 import os
 import random
 import time
-
+LOG = open('log.txt', 'w')
+LOGTEXT = ''
 def bases(cls):
     #yields all classes used by cls except object class
     if cls != object:
@@ -58,6 +60,8 @@ class organism(thing):
     aliveInstances = []
     @classmethod
     def getKey(cls):
+        if hasattr(cls, 'key'):
+            return cls.key
         return cls.__name__
     
 
@@ -75,8 +79,9 @@ class organism(thing):
                 x.instances.append(self)
                 if self.alive == True and x != thing:
                     x.aliveInstances.append(self)
+            LOG.write(name + 'created'+'\n')
     def kill(self):
-        print(f'killing {self.name}')
+        LOG.write(f'killing {self.name}\n')
         self.alive = False
         for x in bases(type(self)):
             if x != thing:
@@ -97,6 +102,35 @@ class organism(thing):
         return self.name
     
 class bean(organism):
+    instances = []
+    aliveInstances = []
+    def pathFind(self, area, goal = 'tree'):
+        assert type(area) == world
+        return (random.randint(0, area.getDimensions()[0]), random.randint(0, area.getDimensions()[1]))
+
+class hungryBean(bean):
+    key = bean.getKey()
+    instances = []
+    aliveInstances = []
+    def pathFind(self,area,goal = 'tree'):
+        assert type(area) == world
+        radius = 0
+        checked = []
+        found = False
+        while not found and (radius <= area.getDimensions()[0] or radius <= area.getDimensions()[1]):
+            minx = self.getPos()[0] - radius if self.getPos()[0] - radius >= 0 else 0
+            miny = self.getPos()[1] - radius if self.getPos()[1] - radius >= 0 else 0
+            maxx = self.getPos()[0] + radius if self.getPos()[0] + radius <= area.getDimensions()[0] else area.getDimensions()[0]
+            maxy = self.getPos()[1] + radius if self.getPos()[1] + radius <= area.getDimensions()[1] else area.getDimensions()[1]
+            for x in range(minx, maxx):
+                for y in range(miny,maxy):
+                    if area.plot[(x,y)][goal]:
+                        return (x,y)
+                    checked.append((x,y))
+            radius += 1
+        return self.getPos()
+class matingBean(bean):
+    key = bean.getKey()
     instances = []
     aliveInstances = []
 class tree(organism):
@@ -172,6 +206,22 @@ class world:
         else:
             return 12
         self.updateLocs([organism])
+    def moveOrganismGradual(self, organism, goalLocation):
+        assert goalLocation in self.plot
+        position = organism.getPos()
+        if goalLocation[0] > position[0]:
+            self.moveOrganism(organism, (position[0]+1, position[1]))
+            return
+        elif goalLocation[0] < position[0]:
+            self.moveOrganism(organism, (position[0]-1, position[1]))
+            return
+        elif goalLocation[1] > position[1]:
+            self.moveOrganism(organism, (position[0], position[1]+1))
+            return
+        elif goalLocation[1] < position[1]:
+            self.moveOrganism(organism, (position[0], position[1]-1))
+            return
+        return
 
     def updateDisplay(self, screen, background, dmod = '4seg'):
         dimensions = screen.get_size()
@@ -231,9 +281,8 @@ class world:
 
 def main():
     Tree = tree('tree')
-    beany = bean('beany')
-    bean2 = beany.reproduce(beany, ['b'])
-    Earth = world('earth', data = tileInfo(bean = [], tile = [], tree = []), dimensions = (100,100))
+    beany = hungryBean('beany')
+    Earth = world('earth', data = tileInfo(bean = [], tile = [], tree = []), dimensions = (40,40))
     Earth.updateLocs(organism.instances)
     #print(Earth)
     beany.consume(Tree)
@@ -262,18 +311,19 @@ def display(world, size = (1000,1000)):
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 ('displaying')
-                world.updateDisplay(screen, background, dmod = '1seg')
+                world.updateDisplay(screen, background, dmod = '4seg')
                 pygame.display.flip()
                 count += 1
-                if count%10 == 0:
-                    continue
-                    world.randomPopulate(tree, .2)
+                if count%5 == 0:
+                    world.randomPopulate(tree, .002)
                     print('populating')
 
                 #print(pygame.mouse.get_pos())
+                world.moveOrganismGradual(bean.aliveInstances[0], bean.aliveInstances[0].pathFind(world))
             elif event.type == pygame.QUIT:
                 playing = False
     pygame.quit()
 
 
 main()
+LOG.close()

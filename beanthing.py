@@ -286,7 +286,7 @@ def animation():
         if count == 100:
             count = 0
         if count%25 == 0:
-            c.randomPopulation(.002)
+            c.randomPopulation(.02)
         c.display(screen)
         for individualBean in bean.aliveInstances:
             c.moveBean(individualBean, individualBean.nextSquare(c, type(individualBean).pathFind))

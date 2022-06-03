@@ -29,9 +29,9 @@ class thing:
     hasColor = False
     @classmethod
     def getKey(cls):
-        if cls.hasColor == False:
-            return cls.__name__
-        return cls.getColor()
+        if hasattr(cls, 'key'):
+            return cls.key
+        return cls.__name__
     instances = []
     def __init__(self, dimensions = (1,1,1), position = [0,0], data = {}, isSolid = True, hasGravity = False):
         self.isSolid = isSolid
@@ -40,17 +40,24 @@ class thing:
         self.data = data
         self.color = hashStringtoColor(self.getKey())
         self.hasGravity = hasGravity
+        self.exists = True
     def getPos(self):
         return (self.position[0], self.position[1])
     def getColor(self):
         return self.color
     def move(self, newPosition):
         self.position = newPosition
+    def doesExist(self):
+        return self.exists
+    def remove(self):
+        self.exists = False
 class tile(thing):
     hasColor = True
-    def __init__(self, dimensions = (1,1,1), position = [0,0], data = {}, type = 'base', color = (0,0,0)):
+    classColor = (0,0,0)
+    def __init__(self, dimensions = (1,1,1), position = [0,0], data = {}, type = 'base', color = None):
         super().__init__(dimensions, position, data)
-        self.color = color
+class house(tile):
+    classColor = (152,120,40)
         
     
     
@@ -58,11 +65,7 @@ class organism(thing):
     hasColor = False
     instances = []
     aliveInstances = []
-    @classmethod
-    def getKey(cls):
-        if hasattr(cls, 'key'):
-            return cls.key
-        return cls.__name__
+
     
 
     #HOW DO I MAKE THIS AUTOMATED AMONG ALL NEWLY CREATED CLASSES?
@@ -83,6 +86,7 @@ class organism(thing):
     def kill(self):
         LOG.write(f'killing {self.name}\n')
         self.alive = False
+        self.exists = False
         for x in bases(type(self)):
             if x != thing:
                 x.aliveInstances.remove(self)
@@ -260,20 +264,19 @@ class world:
                 if not worked:
                     pygame.draw.rect(screen, background, pygame.Rect(locationUsed))
 
-
     def updateLocs(self, organisms):
         keys = []
         for i in organisms:
             if i.getKey() not in keys:
                 keys.append(i.getKey())
         for i in organisms:
-            if not i in self.plot[i.getPos()][i.getKey()] and i.isAlive():
+            if not i in self.plot[i.getPos()][i.getKey()] and i.doesExist():
                 self.plot[i.getPos()][i.getKey()].append(i)
         indexes = []
         for i in self.plot:
             for key in keys:
                 for x in self.plot[i][key]:
-                    if x.getPos() != i or x.isAlive() == False:
+                    if x.getPos() != i or x.doesExist() == False:
                         indexes.append((i, x, key))
         for i in indexes:
             self.plot[i[0]][i[2]].remove(i[1])
@@ -282,8 +285,10 @@ class world:
 def main():
     Tree = tree('tree')
     beany = hungryBean('beany')
-    Earth = world('earth', data = tileInfo(bean = [], tile = [], tree = []), dimensions = (40,40))
+    Hut = house(position = [20,20], color = house.classColor)
+    Earth = world('earth', data = tileInfo(bean = [], house = [], tree = []), dimensions = (40,40))
     Earth.updateLocs(organism.instances)
+    Earth.updateLocs([Hut])
     #print(Earth)
     beany.consume(Tree)
     #print(Earth)

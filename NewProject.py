@@ -69,7 +69,7 @@ class organism(thing):
     
 
     #HOW DO I MAKE THIS AUTOMATED AMONG ALL NEWLY CREATED CLASSES?
-    def __init__(self, name = 'NaN', dimensions = (1,1,1), parents = (None, None), position = [0,0], data = {}, alive = True, energy = 0):
+    def __init__(self, name = None, dimensions = (1,1,1), parents = (None, None), position = [0,0], data = {}, alive = True, energy = 0):
             super().__init__(dimensions, position, data, hasGravity = True)
             self.name = name
             self.dimensions = dimensions
@@ -78,11 +78,13 @@ class organism(thing):
             self.energy = energy
             self.alive = alive
             self.energyStore = multElements(self.dimensions)
+            if not name:
+                self.name = 'N'+str(len(organism.instances))
             for x in bases(type(self)):
                 x.instances.append(self)
                 if self.alive == True and x != thing:
                     x.aliveInstances.append(self)
-            LOG.write(name + 'created'+'\n')
+            LOG.write(self.name + 'created'+'\n')
     def kill(self):
         LOG.write(f'killing {self.name}\n')
         self.alive = False
@@ -107,7 +109,7 @@ class organism(thing):
             self.reproduce(mate, traits)
     def __str__(self):
         return self.name
-    def interact(self, organismtype):
+    def interact(self, thing1, area):
         pass
 class bean(organism):
     instances = []
@@ -116,7 +118,6 @@ class bean(organism):
         assert type(area) == world
         return (random.randint(0, area.getDimensions()[0]), random.randint(0, area.getDimensions()[1]))
     def interact(self, thing1, area):
-        print(f'interacting {self} and {thing1}')
         if self == thing:
             return
         if type(thing1)== tree:
@@ -299,7 +300,8 @@ class world:
             for x in self.plot[org.getPos()]:
                 for y in self.plot[org.getPos()][x]:
                     org.interact(y, self)
-
+                    self.updateLocs([y])
+        
     def updateLocs(self, organisms):
         keys = []
         for i in organisms:
@@ -319,15 +321,14 @@ class world:
 
 
 def main():
-    Tree = tree('tree')
     beany = hungryBean('beany')
+    yo = tree('treey', position = [1,1])
     bobet = matingBean('bobet')
-    Hut = house(position = [20,20], color = house.classColor)
-    Earth = world('earth', data = tileInfo(bean = [], house = [], tree = []), dimensions = (40,40))
+    Hut = house(position = [5,5], color = house.classColor)
+    Earth = world('earth', data = tileInfo(bean = [], house = [], tree = []), dimensions = (10,10))
     Earth.updateLocs(organism.instances)
     Earth.updateLocs([Hut])
     #print(Earth)
-    beany.consume(Tree)
     #print(Earth)
     Earth.moveOrganism(beany, (4,4))
     #print(Earth)
@@ -360,6 +361,7 @@ def display(world, size = (1000,1000)):
                     world.randomPopulate(tree, .002)
                     print('populating')
                 world.tryActions(bean.aliveInstances)
+                
                 moveOrganismsGradual(world, bean.aliveInstances)
             elif event.type == pygame.QUIT:
                 playing = False

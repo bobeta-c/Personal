@@ -8,6 +8,7 @@ import random
 import time
 LOG = open('log.txt', 'w')
 LOGTEXT = ''
+DX, DY = 20, 20
 def bases(cls):
     #yields all classes used by cls except object class
     if cls != object:
@@ -55,11 +56,13 @@ class thing:
         return self.exists
     def remove(self):
         self.exists = False
+
 class tile(thing):
     hasColor = True
     classColor = (0,0,0)
     def __init__(self, dimensions = (1,1,1), position = [0,0], data = {}, type = 'base', color = None):
         super().__init__(dimensions, position, data)
+
 class house(tile):
     classColor = (255,20,147)
         
@@ -69,9 +72,6 @@ class organism(thing):
     hasColor = False
     instances = []
     aliveInstances = []
-
-    
-
     #HOW DO I MAKE THIS AUTOMATED AMONG ALL NEWLY CREATED CLASSES?
     def __init__(self, name = None, dimensions = (1,1,1), parents = (None, None), position = [0,0], data = {}, alive = True, energy = 0):
             super().__init__(dimensions, position, data, hasGravity = True)
@@ -119,6 +119,11 @@ class organism(thing):
         return self.name
     def interact(self, thing1, area):
         pass
+    def hunger(self):
+        if self.energy < 1:
+            self.kill()
+        else:
+            self.energy -= 1
 class bean(organism):
     instances = []
     aliveInstances = []
@@ -213,7 +218,7 @@ class tileInfo:
 
 
 class world:
-    def __init__(self, name = 'NaN', dimensions = (10,10), data = tileInfo()):
+    def __init__(self, name = 'NaN', dimensions = (DX, DY), data = tileInfo()):
         self.name = name
         self.dimensions = dimensions
         self.plot = {}
@@ -223,6 +228,10 @@ class world:
                 self.plot[(x,y)] = self.data.cpData()
     def getDimensions(self):
         return self.dimensions[:]
+    def getX(self):
+        return self.dimensions[0]
+    def getY(self):
+        return self.dimensions[1]
     def getStr(self, key1, key2):
         string = ''
         for y in range(self.getDimensions()[1]):
@@ -244,6 +253,7 @@ class world:
                 temp = organismType(position = list(index))
                 self.plot[index][organismType.getKey()].append(temp)
         self.updateLocs(organismType.instances)
+        LOG.write(f'populating: type-random, beans-{len(bean.aliveInstances)}, trees-{len(tree.aliveInstances)}\n')
     def moveOrganism(self, organism, newLocation):
         if newLocation in self.plot:
             organism.move(newLocation)
@@ -266,7 +276,12 @@ class world:
             self.moveOrganism(organism, (position[0], position[1]-1))
             return
         return
-
+    def controlledPopulate(self, organismType, num):
+        for _ in range(num):
+            position = (random.randrange(0,self.getX()), random.randrange(0,self.getY()))
+            self.plot[position][organismType.getKey()].append(organismType(position = list(position)))
+        self.updateLocs(organismType.instances)
+        LOG.write(f'populating: type-controlled, beans-{len(bean.aliveInstances)}, trees-{len(tree.aliveInstances)}\n')
     def updateDisplay(self, screen, background, dmod = '4seg'):
         dimensions = screen.get_size()
         xIncrement = dimensions[0]//self.getDimensions()[0]
@@ -326,19 +341,30 @@ class world:
                         indexes.append((i, x, key))
         for i in indexes:
             self.plot[i[0]][i[2]].remove(i[1])
-
-
+    def sendEdges(self, organisms):
+        '''
+        Sends all organisms to the edges of the world
+        random
+        '''
+        for org in organisms:
+            edge = random.randint(1,4)
+            randx = random.randrange(0,self.getX())
+            randy = random.randrange(0,self.getY())
+            positions = {1:[0,randy], 2:[self.getX()-1, randy], 3:[randx, 0], 4:[randx, self.getY()-1]}
+            org.move(positions[edge])
+    def inflictHunger(self, organisms):
+        for x in organisms:
+            x.hunger()
+        self.updateLocs(organisms)
 def main():
-    matingBean('ABean')
-    matingBean('BBean')
-    dx, dy = 20, 20
-    house(position = [dx//2, dy//2], color = house.classColor)
-    print(house.getKey())
+    matingBean('ABean', energy= 2)
+    matingBean('BBean', energy= 2)
+    house(position = [DX//2, DY//2], color = house.classColor)
     inputData = tileInfo(**{bean.getKey():[], house.getKey():[], tree.getKey():[]})
-    Earth = world('earth', data = inputData, dimensions = (dx,dy))
+    Earth = world('earth', data = inputData, dimensions = (DX,DY))
     Earth.updateLocs(thing.instances)
     screen, background = setup()
-    display(Earth, screen, background)
+    simulate(Earth, screen, background)
 
 def setup(size = (1000,1000)):
     pygame.init()
@@ -353,19 +379,20 @@ def setup(size = (1000,1000)):
     pygame.display.flip()
     return screen, background
 
-def display(world, screen, background):
+def simulate(world, screen, background):
     playing = True
     count = 0
     world.updateLocs(organism.instances)
     while playing:
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
+                if not count % DX:
+                    world.sendEdges(bean.aliveInstances)
+                    world.controlledPopulate(tree, round((DX*DY)**(1/2))//4)
+                    world.inflictHunger(bean.aliveInstances)
                 world.updateDisplay(screen, background, dmod = '4seg')
                 pygame.display.flip()
                 count += 1
-                if count%5 == 0:
-                    world.randomPopulate(tree, .008)
-                    print(f'populating: beans-{len(bean.aliveInstances)}, trees-{len(tree.aliveInstances)}')
                 world.tryActions(bean.aliveInstances)
                 
                 moveOrganismsGradual(world, bean.aliveInstances)
@@ -376,9 +403,7 @@ def display(world, screen, background):
 def moveOrganismsGradual(area, organisms):
     assert type(area) == world
     for x in organisms:
-        print(x.getPos(), end = '')
         area.moveOrganismGradual(x,x.pathFind(area))
-        print(x.getPos())
 
 main()
 LOG.close() 

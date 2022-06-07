@@ -38,9 +38,13 @@ class thing:
         self.dimensions = dimensions
         self.position = position[:]
         self.data = data
-        self.color = hashStringtoColor(self.getKey())
         self.hasGravity = hasGravity
         self.exists = True
+        thing.instances.append(self)
+        if issubclass(type(self), tile):
+            self.color = type(self).classColor
+        else:
+            self.color = hashStringtoColor(self.getKey())
     def getPos(self):
         return (self.position[0], self.position[1])
     def getColor(self):
@@ -57,7 +61,7 @@ class tile(thing):
     def __init__(self, dimensions = (1,1,1), position = [0,0], data = {}, type = 'base', color = None):
         super().__init__(dimensions, position, data)
 class house(tile):
-    classColor = (152,120,40)
+    classColor = (255,20,147)
         
     
     
@@ -74,17 +78,19 @@ class organism(thing):
             self.name = name
             self.dimensions = dimensions
             self.parents = parents
-            self.position = position
             self.energy = energy
             self.alive = alive
             self.energyStore = multElements(self.dimensions)
             if not name:
-                self.name = 'N'+str(len(organism.instances))
+                if parents[0]:
+                    self.name = parents[0].getName() + str(len(organism.instances))
+                else:
+                    self.name = 'N'+str(len(organism.instances))
             for x in bases(type(self)):
                 x.instances.append(self)
                 if self.alive == True and x != thing:
                     x.aliveInstances.append(self)
-            LOG.write(self.name + 'created'+'\n')
+            LOG.write(self.name + f' created at pos{self.position}\n')
     def kill(self):
         LOG.write(f'killing {self.name}\n')
         self.alive = False
@@ -100,12 +106,14 @@ class organism(thing):
         organism.kill()
         self.energy += organism.energyStore
         organism.energyStore = 0
-    def reproduce(self, mate, traits = None):
+    def reproduce(self, mate, traits = {}):
         self.energy -= 1
         mate.energy -= 1
-        return type(self)(parents = (self, mate),*traits)
-    def mate(self, mate, area, traits = None):
-        if self.getPos() == mate.getPos() and self.energy >= 1 and mate.energy >= 1 and area.plot[self.getPos()][house]:
+        if not 'position' in traits.keys():
+            traits['position'] = list(self.getPos())
+        return type(self)(parents = (self, mate),**traits)
+    def mate(self, mate, area, traits = {}):
+        if self.getPos() == mate.getPos() and self.energy >= 1 and mate.energy >= 1 and area.plot[self.getPos()][house.getKey()]:
             self.reproduce(mate, traits)
     def __str__(self):
         return self.name
@@ -118,11 +126,11 @@ class bean(organism):
         assert type(area) == world
         return (random.randint(0, area.getDimensions()[0]), random.randint(0, area.getDimensions()[1]))
     def interact(self, thing1, area):
-        if self == thing:
+        if self == thing1:
             return
-        if type(thing1)== tree:
+        if issubclass(type(thing1), tree):
             self.consume(thing1)
-        elif type(thing1) == bean:
+        elif issubclass(type(thing1), bean):
             self.mate(thing1, area)
 
 
@@ -321,55 +329,56 @@ class world:
 
 
 def main():
-    beany = hungryBean('beany')
-    yo = tree('treey', position = [1,1])
-    bobet = matingBean('bobet')
-    Hut = house(position = [5,5], color = house.classColor)
-    Earth = world('earth', data = tileInfo(bean = [], house = [], tree = []), dimensions = (10,10))
-    Earth.updateLocs(organism.instances)
-    Earth.updateLocs([Hut])
-    #print(Earth)
-    #print(Earth)
-    Earth.moveOrganism(beany, (4,4))
-    #print(Earth)
-    display(Earth)
+    matingBean('ABean')
+    matingBean('BBean')
+    dx, dy = 20, 20
+    house(position = [dx//2, dy//2], color = house.classColor)
+    print(house.getKey())
+    inputData = tileInfo(**{bean.getKey():[], house.getKey():[], tree.getKey():[]})
+    Earth = world('earth', data = inputData, dimensions = (dx,dy))
+    Earth.updateLocs(thing.instances)
+    screen, background = setup()
+    display(Earth, screen, background)
 
-def display(world, size = (1000,1000)):
+def setup(size = (1000,1000)):
     pygame.init()
     cd = os.getcwd()
     filePath = cd + '/logo32x32.png'
     logo = pygame.image.load(filePath)
     pygame.display.set_icon(logo)
     screen = pygame.display.set_mode(size)
-    
     background = (0,0,0)
     screen.fill(background)
     screen.blit(logo, (240-32,180-32))
     pygame.display.flip()
+    return screen, background
 
+def display(world, screen, background):
     playing = True
     count = 0
     world.updateLocs(organism.instances)
     while playing:
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
-                ('displaying')
                 world.updateDisplay(screen, background, dmod = '4seg')
                 pygame.display.flip()
                 count += 1
                 if count%5 == 0:
-                    world.randomPopulate(tree, .002)
-                    print('populating')
+                    world.randomPopulate(tree, .008)
+                    print(f'populating: beans-{len(bean.aliveInstances)}, trees-{len(tree.aliveInstances)}')
                 world.tryActions(bean.aliveInstances)
                 
                 moveOrganismsGradual(world, bean.aliveInstances)
             elif event.type == pygame.QUIT:
                 playing = False
     pygame.quit()
+
 def moveOrganismsGradual(area, organisms):
     assert type(area) == world
     for x in organisms:
+        print(x.getPos(), end = '')
         area.moveOrganismGradual(x,x.pathFind(area))
+        print(x.getPos())
 
 main()
-LOG.close()
+LOG.close() 

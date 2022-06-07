@@ -6,9 +6,10 @@ import pygame
 import os
 import random
 import time
+import matplotlib.pyplot as plt
 LOG = open('log.txt', 'w')
 LOGTEXT = ''
-DX, DY = 20, 20
+DX, DY = 40, 40
 def bases(cls):
     #yields all classes used by cls except object class
     if cls != object:
@@ -16,6 +17,17 @@ def bases(cls):
         for direct_base in cls.__bases__:
             for base in bases(direct_base):
                 yield base
+def inheritors(klass):
+    subclasses = set()
+    work = [klass]
+    subclasses.add(klass)
+    while work:
+        parent = work.pop()
+        for child in parent.__subclasses__():
+            if child not in subclasses:
+                subclasses.add(child)
+                work.append(child)
+    return subclasses
 def multElements(iterable):
     sum = 1
     for x in iterable:
@@ -83,14 +95,14 @@ class organism(thing):
             self.energyStore = multElements(self.dimensions)
             if not name:
                 if parents[0]:
-                    self.name = parents[0].getName() + str(len(organism.instances))
+                    self.name = parents[0].getName()[:3] + str(len(organism.instances))
                 else:
                     self.name = 'N'+str(len(organism.instances))
             for x in bases(type(self)):
                 x.instances.append(self)
                 if self.alive == True and x != thing:
                     x.aliveInstances.append(self)
-            LOG.write(self.name + f' created at pos{self.position}\n')
+            LOG.write(self.name + f' created pos-{self.position}, energy-{self.energy}\n')
     def kill(self):
         LOG.write(f'killing {self.name}\n')
         self.alive = False
@@ -98,6 +110,14 @@ class organism(thing):
         for x in bases(type(self)):
             if x != thing:
                 x.aliveInstances.remove(self)
+    @staticmethod
+    def reset():
+        for org in organism.aliveInstances:
+            org.alive = False
+            org.exits = False
+        for klass in inheritors(organism):
+            klass.aliveInstances = []
+            klass.instances = []
     def isAlive(self):
         return self.alive
     def getName(self):
@@ -106,6 +126,7 @@ class organism(thing):
         organism.kill()
         self.energy += organism.energyStore
         organism.energyStore = 0
+        LOG.write(self.name + f' ate {organism}, new energy-{self.energy}\n')
     def reproduce(self, mate, traits = {}):
         self.energy -= 1
         mate.energy -= 1
@@ -124,6 +145,7 @@ class organism(thing):
             self.kill()
         else:
             self.energy -= 1
+
 class bean(organism):
     instances = []
     aliveInstances = []
@@ -323,8 +345,7 @@ class world:
             for x in self.plot[org.getPos()]:
                 for y in self.plot[org.getPos()][x]:
                     org.interact(y, self)
-                    self.updateLocs([y])
-        
+                    self.updateLocs([y])        
     def updateLocs(self, organisms):
         keys = []
         for i in organisms:
@@ -356,15 +377,26 @@ class world:
         for x in organisms:
             x.hunger()
         self.updateLocs(organisms)
+
 def main():
-    matingBean('ABean', energy= 2)
-    matingBean('BBean', energy= 2)
-    house(position = [DX//2, DY//2], color = house.classColor)
-    inputData = tileInfo(**{bean.getKey():[], house.getKey():[], tree.getKey():[]})
-    Earth = world('earth', data = inputData, dimensions = (DX,DY))
-    Earth.updateLocs(thing.instances)
-    screen, background = setup()
-    simulate(Earth, screen, background)
+    for dimension in range(10,31, 5):
+        organism.reset()
+        LOG.write(f'Simulation size-{dimension}')
+        DX, DY = dimension, dimension
+        matingBean('ABean', energy= 1)
+        matingBean('BBean', energy= 1)
+        house(position = [DX//2, DY//2], color = house.classColor)
+        inputData = tileInfo(**{bean.getKey():[], house.getKey():[], tree.getKey():[]})
+        Earth = world('earth', data = inputData, dimensions = (DX,DY))
+        Earth.updateLocs(thing.instances)
+        screen, background = setup()
+        LOG.write(f'beans-{len(bean.aliveInstances)}, trees-{len(tree.aliveInstances)}\n\n\n')
+        popOverTime = simulate(Earth, screen, background)
+        plt.plot(popOverTime)
+        LOG.write(f'final population-{popOverTime[-1]}, dimension-{dimension}')
+        plt.ylabel('population')
+        plt.title(f'dimension-{dimension}')
+        plt.show()
 
 def setup(size = (1000,1000)):
     pygame.init()
@@ -380,30 +412,39 @@ def setup(size = (1000,1000)):
     return screen, background
 
 def simulate(world, screen, background):
+    population =[len(bean.aliveInstances)]
     playing = True
     count = 0
     world.updateLocs(organism.instances)
     while playing:
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if not count % DX:
-                    world.sendEdges(bean.aliveInstances)
-                    world.controlledPopulate(tree, round((DX*DY)**(1/2))//4)
-                    world.inflictHunger(bean.aliveInstances)
-                world.updateDisplay(screen, background, dmod = '4seg')
-                pygame.display.flip()
-                count += 1
-                world.tryActions(bean.aliveInstances)
-                
-                moveOrganismsGradual(world, bean.aliveInstances)
+                count, population = currentSimulation(world, count, screen, background, population, display = True)
             elif event.type == pygame.QUIT:
                 playing = False
+        if count < 2000:
+            count, population = currentSimulation(world, count, screen, background, population)
+        else:
+            playing = False
     pygame.quit()
+    return population
+
+def currentSimulation(area, count, screen, background,population, display = False):
+    if not count % (DX*2):
+        area.sendEdges(bean.aliveInstances)
+        area.controlledPopulate(tree, round((DX*DY)**(1/2))//4)
+        area.inflictHunger(bean.aliveInstances)
+        population.append(len(bean.aliveInstances))
+    if display:
+        area.updateDisplay(screen, background, dmod = '4seg')
+        pygame.display.flip()
+    area.tryActions(bean.aliveInstances)
+    moveOrganismsGradual(area, bean.aliveInstances)
+    return count + 1, population
 
 def moveOrganismsGradual(area, organisms):
     assert type(area) == world
     for x in organisms:
         area.moveOrganismGradual(x,x.pathFind(area))
-
 main()
 LOG.close() 

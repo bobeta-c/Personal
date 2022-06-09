@@ -50,6 +50,11 @@ def hashStringtoColor(string):
     return (hash[0], hash[1], hash[2])
 def findDistance(pos1, pos2):
     return ((pos1[0]-pos2[0])**2+(pos1[1]-pos2[1])**2)**(1/2)
+def createInstances(instanceData, **atributes):
+    for instanceType in instanceData:
+        assert type(instanceType) == tuple and len(instanceType) == 2
+        for i in range(instanceType[1]):
+            instanceType[0](**atributes)
 class thing:
     hasColor = False
     @classmethod
@@ -461,7 +466,6 @@ class world:
         random
         '''
         for org in organisms:
-            print(org)
             edge = random.randint(1,4)
             randx = random.randrange(0,self.getX())
             randy = random.randrange(0,self.getY())
@@ -483,18 +487,18 @@ def main():
         Earth = world('earth', data = inputData, dimensions = (DX,DY))
         Earth.reset()
         LOG.write(f'Simulation size-{dimension}')
-        for _ in range(4):
-            matingBean(energy = 1)
-        predator('killa', energy = 1)
+        createInstances([(matingBean,2),(hungryBean,2),(smartMatingBean,2),(predator,2)], **{'energy':1})
         house(position = [DX//2, DY//2], color = house.classColor)
         Earth.updateLocs(thing.instances)
         LOG.write(f'beans-{len(bean.aliveInstances)}, trees-{len(tree.aliveInstances)}\n\n\n')
 
-        popOverTime = simulate(Earth, screen, background, auto = False)
-
-        plt.plot(popOverTime)
-        LOG.write(f'final population-{popOverTime[-1]}, dimension-{dimension}')
+        popOverTime = simulate(Earth, screen, background, auto = True)
+        for name, data in popOverTime.items():
+            if name not in ['organism', 'tree']:
+                plt.plot(data, label=name)
+        LOG.write(f'final population-{popOverTime["organism"][-1]}, dimension-{dimension}')
         plt.ylabel('population')
+        plt.legend(loc = 'right')
         plt.title(f'dimension-{dimension}')
         plt.show()
 
@@ -512,7 +516,7 @@ def setup(size = (1000,1000)):
     return screen, background
 
 def simulate(world, screen, background, displayType = False, auto = True):
-    population =[len(bean.aliveInstances)]
+    population ={klass.__name__:[len(klass.aliveInstances)] for klass in inheritors(organism)}
     playing = True
     count = 0
     world.updateLocs(organism.instances)
@@ -537,7 +541,8 @@ def currentSimulation(area, count, screen, background,population, display = Fals
         area.sendEdges(bean.aliveInstances+predator.aliveInstances)
         area.controlledPopulate(tree, round((area.getDimensions()[0]*area.getDimensions()[1])*0.05))
         area.inflictHunger(bean.aliveInstances+predator.aliveInstances)
-        population.append(len(bean.aliveInstances))
+        for klass in inheritors(organism):
+            population[klass.__name__].append(len(klass.aliveInstances))
     if display:
         area.updateDisplay(screen, background, dmod = '4seg')
         pygame.display.flip()

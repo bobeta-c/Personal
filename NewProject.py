@@ -1,5 +1,8 @@
+from cgi import test
 from dis import dis
+from gettext import find
 from operator import truediv
+from tracemalloc import start
 from turtle import pos
 from unicodedata import name
 import hashlib
@@ -118,16 +121,13 @@ class organism(thing):
             self.alive = alive
             self.energyStore = multElements(self.dimensions)
             if not name:
-                if parents[0]:
-                    self.name = parents[0].getName()[:3] + str(len(organism.instances))
-                else:
-                    self.name = self.__class__.__name__[0]+str(len(organism.instances))
+                self.name = type(self).__name__[0] + str(len(type(self).instances))
 
             for x in bases(type(self)):
                 x.instances.append(self)
                 if self.alive == True and x != thing:
                     x.aliveInstances.append(self)
-            LOG.write(self.name + f' created pos-{self.position}, energy-{self.energy}\n')
+            #LOG.write(self.name + f' created pos-{self.position}, energy-{self.energy}\n')
     def kill(self):
         LOG.write(f'killing {self.name}\n')
         self.alive = False
@@ -141,17 +141,26 @@ class organism(thing):
         return self.name
     def consume(self, organism):
         organism.kill()
-        self.energy += organism.energyStore
+        self.energy += organism.energyStore + organism.energy
         organism.energyStore = 0
         LOG.write(self.name + f' ate {organism}, new energy-{self.energy}\n')
     def reproduce(self, mate, traits = {}):
-        self.energy -= 1
-        mate.energy -= 1
+        if type(self) == predator:
+            self.energy -= 4
+            mate.energy -= 4
+        else:
+            self.energy -= 1
+            mate.energy -= 1
         if not 'position' in traits.keys():
             traits['position'] = list(self.getPos())
+        if not 'energy' in traits.keys():
+            traits['energy'] = 2
+        LOG.write(f'{self} and {mate} reproduced')
         return type(self)(parents = (self, mate),**traits)
+
     def mate(self, mate, area, traits = {}):
-        if self.getPos() == mate.getPos() and self.energy >= 1 and mate.energy >= 1 and area.plot[self.getPos()][house.getKey()]:
+        needsHouse = True if issubclass(type(self), bean) else False
+        if self.getPos() == mate.getPos() and self.energy >= 1 and mate.energy >= 1 and (area.plot[self.getPos()][house.getKey()]or not needsHouse):
             self.reproduce(mate, traits)
     def __str__(self):
         return self.name
@@ -168,7 +177,7 @@ class bean(organism):
     aliveInstances = []
     def pathFind(self, area, goal = 'tree'):
         assert type(area) == world
-        return (random.randint(0, area.getDimensions()[0]), random.randint(0, area.getDimensions()[1]))
+        return (random.randrange(0, area.getDimensions()[0]), random.randrange(0, area.getDimensions()[1]))
     def interact(self, thing1, area):
         if self == thing1:
             return
@@ -180,7 +189,7 @@ class bean(organism):
 class predator(organism):
     instances = []
     aliveInstances = []
-    def pathFind(self, area, goal = 'bean', radius = 3):
+    def pathFind(self, area, goal = 'bean', radius = 4):
         locationsOfHouses = []
         for houseInstance in thing.instances:
             if type(houseInstance) == house and houseInstance.exists:
@@ -191,16 +200,23 @@ class predator(organism):
         for beanInstance in bean.aliveInstances:
             testX, testY = beanInstance.getPos()[0], beanInstance.getPos()[1]
             working = True
-            for housePos in locationsOfHouses:
-                if findDistance(housePos, (testX,testY))<=radius:
-                    working = False
-                    break
-            if working:
+            if findDistance((x,y), (testX,testY)) <= radius:
                 distance = findDistance((x,y),(testX,testY))
                 if not minDistance or distance < minDistance:
                     minPos = (testX, testY)
                     minDistance = distance
-        return minPos if minPos != () else self.getPos()
+        if minPos != ():
+            return minPos
+        else:
+            if self.energy >= 4:
+                for pred in predator.aliveInstances:
+                    testDistance = findDistance((x,y), pred.getPos())
+                    if (not minDistance or testDistance< minDistance) and pred != self:
+                        minPos = (pred.getPos())
+                        minDistance = testDistance
+        if minPos != ():
+            return minPos
+        return (random.randrange(0, area.getDimensions()[0]), random.randrange(0, area.getDimensions()[1]))
     def interact(self, thing1, area):
         if self == thing1:
             return
@@ -258,7 +274,7 @@ class matingBean(bean):
                         checked.append((x,y))
                 radius += 1
         else:
-            goal = goal1 if self.energy < 1 else goal2
+            goal = goal1 if self.energy < 3 else goal2
             x, y = self.getPos()[0], self.getPos()[1]
             minDistance = None
             minPos = ()
@@ -377,6 +393,7 @@ class world:
             return 12
         self.updateLocs([organism])
     def moveOrganismGradual(self, organism, goalLocation):
+        print(organism, goalLocation)
         assert goalLocation in self.plot
         position = organism.getPos()
         xChange = goalLocation[0]-position[0]
@@ -480,26 +497,28 @@ class world:
             x.hunger()
         self.updateLocs(organisms)
 
-def main():
-    for dimension in range(25,36, 5):
-        DX, DY, inputData = dimension, dimension, tileInfo(**{bean.getKey():[], house.getKey():[], tree.getKey():[], predator.getKey():[]})
-        screen, background = setup()
-        Earth = world('earth', data = inputData, dimensions = (DX,DY))
-        Earth.reset()
-        LOG.write(f'Simulation size-{dimension}')
-        createInstances([(matingBean,2),(hungryBean,2),(smartMatingBean,2),(predator,2)], **{'energy':1})
-        house(position = [DX//2, DY//2], color = house.classColor)
-        Earth.updateLocs(thing.instances)
-        LOG.write(f'beans-{len(bean.aliveInstances)}, trees-{len(tree.aliveInstances)}\n\n\n')
+def main(dimension=10, matingBeans= 2, smartMatingBeans = 2, predators = 2, energy = 5, doAuto = True, cycles = 2000, daylengthRatio = 1.2, treeRatio = .05, displayType = False, show = False):
+    DX, DY, inputData = dimension, dimension, tileInfo(**{bean.getKey():[], house.getKey():[], tree.getKey():[], predator.getKey():[]})
+    screen, background = setup()
+    Earth = world('earth', data = inputData, dimensions = (DX,DY))
+    Earth.reset()
+    LOG.write(f'Simulation size-{dimension}')
+    createInstances([(matingBean,matingBeans),(smartMatingBean,smartMatingBeans),(predator,predators)], **{'energy':energy})
+    house(position = [DX//2, DY//2], color = house.classColor)
+    Earth.updateLocs(thing.instances)
+    LOG.write(f'beans-{len(bean.aliveInstances)}, trees-{len(tree.aliveInstances)}\n\n\n')
 
-        popOverTime = simulate(Earth, screen, background, auto = True)
-        for name, data in popOverTime.items():
-            if name not in ['organism', 'tree']:
-                plt.plot(data, label=name)
-        LOG.write(f'final population-{popOverTime["organism"][-1]}, dimension-{dimension}')
-        plt.ylabel('population')
-        plt.legend(loc = 'right')
-        plt.title(f'dimension-{dimension}')
+    popOverTime = simulate(Earth, screen, background, daylengthRatio, treeRatio, displayType, auto = doAuto, kcycles = cycles)
+    for name, data in popOverTime.items():
+        if name not in ['organism', 'tree', 'bean']:
+            plt.plot(data, label=name)
+    LOG.write(f'final population-{popOverTime["organism"][-1]}, dimension-{dimension}')
+    plt.ylabel('population')
+    plt.xlabel('days')
+
+    plt.legend(loc = 'right')
+    plt.title(f'dimension-{dimension}, trees-{treeRatio}, dayLen-{daylengthRatio}, energy-{energy}')
+    if show:
         plt.show()
 
 def setup(size = (1000,1000)):
@@ -515,7 +534,7 @@ def setup(size = (1000,1000)):
     pygame.display.flip()
     return screen, background
 
-def simulate(world, screen, background, displayType = False, auto = True):
+def simulate(world, screen, background, dlRatio, treeRatio,  dType = False, auto = True, kcycles = 2000):
     population ={klass.__name__:[len(klass.aliveInstances)] for klass in inheritors(organism)}
     playing = True
     count = 0
@@ -523,23 +542,23 @@ def simulate(world, screen, background, displayType = False, auto = True):
     while playing:
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
-                count, population = currentSimulation(world, count, screen, background, population, display = True)
+                count, population = currentSimulation(world, count, screen, background, population, dlRatio, treeRatio, display = True)
             elif event.type == pygame.QUIT:
                 playing = False
         if auto:
-            if count < 2000:
-                count, population = currentSimulation(world, count, screen, background, population, display = displayType)
+            if count < kcycles:
+                count, population = currentSimulation(world, count, screen, background, population, dlRatio,treeRatio, display = dType)
             else:
                 playing = False
     pygame.quit()
     return population
 #@timer_func
-def currentSimulation(area, count, screen, background,population, display = False):
-    if not count % (area.getDimensions()[0]):
+def currentSimulation(area, count, screen, background,population, ratio,treeRatio, display = False):
+    if not count % abs(area.getDimensions()[0]*(ratio)):
         area.killAll(tree)
         area.resetDisplay(screen, background)
         area.sendEdges(bean.aliveInstances+predator.aliveInstances)
-        area.controlledPopulate(tree, round((area.getDimensions()[0]*area.getDimensions()[1])*0.05))
+        area.controlledPopulate(tree, round((area.getDimensions()[0]*area.getDimensions()[1])*treeRatio))
         area.inflictHunger(bean.aliveInstances+predator.aliveInstances)
         for klass in inheritors(organism):
             population[klass.__name__].append(len(klass.aliveInstances))
@@ -553,6 +572,8 @@ def currentSimulation(area, count, screen, background,population, display = Fals
 def moveOrganismsGradual(area, organisms):
     assert type(area) == world
     for x in organisms:
+        if type(x) == predator:
+            area.moveOrganismGradual(x,x.pathFind(area))
         area.moveOrganismGradual(x,x.pathFind(area))
-main()
+main(predators = 2, smartMatingBeans=0, matingBeans=4, dimension = 35,energy = 3,doAuto = False, show=True, treeRatio = .02, cycles = 1000, daylengthRatio= 1)
 LOG.close() 

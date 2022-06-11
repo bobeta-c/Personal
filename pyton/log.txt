@@ -1,0 +1,54 @@
+Simulation size-35beans-4, trees-0
+
+
+populating: type-controlled, beans-4, trees-24
+killing t12
+m1 ate t12, new energy-3
+killing t3
+m3 ate t3, new energy-3
+killing t9
+m2 ate t9, new energy-3
+killing m3
+p0 ate m3, new energy-6
+killing m1
+p1 ate m1, new energy-6
+killing t8
+m0 ate t8, new energy-3
+p0 and p1 reproducedp1 and p0 reproducedp2 and p3 reproducedkilling m2
+p0 ate m2, new energy-2
+killing m0
+p2 ate m0, new energy-2
+killing t0
+killing t2
+killing t5
+killing t7
+killing t11
+killing t14
+killing t16
+killing t18
+killing t20
+killing t22
+populating: type-controlled, beans-0, trees-34
+killing p1
+killing p3
+p0 and p2 reproducedkilling t1
+killing t6
+killing t13
+killing t17
+killing t21
+killing t24
+killing t26
+killing t28
+killing t30
+killing t32
+killing t34
+killing t36
+killing t38
+killing t40
+killing t42
+killing t44
+killing t46
+populating: type-controlled, beans-0, trees-41
+killing p0
+killing p2
+final population-43, dimension-35

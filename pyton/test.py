@@ -9,7 +9,7 @@ def main():
     pygame.display.set_icon(logo)
     pygame.display.set_caption('test')
 
-    screen = pygame.display.set_mode((240, 180))
+    screen = pygame.display.set_mode((500, 580))
     screen.fill((0,120,255))
     screen.blit(image, (240-32,180-32))
     print(screen.get_size())
@@ -31,6 +31,4 @@ def avg(*args):
 
 if __name__ == "__main__":
 
-    mydict = {1:1,2:3,3:12,4:12,5:123,6:1,7:0}
-    print(list(mydict.keys())[:4])
-    #main()
+    main()

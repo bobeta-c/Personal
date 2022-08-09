@@ -146,8 +146,8 @@ class organism(thing):
         LOG.write(self.name + f' ate {organism}, new energy-{self.energy}\n')
     def reproduce(self, mate, traits = {}):
         if type(self) == predator:
-            self.energy -= 4
-            mate.energy -= 4
+            self.energy -= 10
+            mate.energy -= 10
         else:
             self.energy -= 1
             mate.energy -= 1
@@ -189,7 +189,7 @@ class bean(organism):
 class predator(organism):
     instances = []
     aliveInstances = []
-    def pathFind(self, area, goal = 'bean', radius = 4):
+    def pathFind(self, area, goal = 'bean', radius = 3):
         locationsOfHouses = []
         for houseInstance in thing.instances:
             if type(houseInstance) == house and houseInstance.exists:
@@ -208,7 +208,7 @@ class predator(organism):
         if minPos != ():
             return minPos
         else:
-            if self.energy >= 4:
+            if self.energy >= 11:
                 for pred in predator.aliveInstances:
                     testDistance = findDistance((x,y), pred.getPos())
                     if (not minDistance or testDistance< minDistance) and pred != self:
@@ -497,7 +497,7 @@ class world:
             x.hunger()
         self.updateLocs(organisms)
 
-def main(dimension=10, matingBeans= 2, smartMatingBeans = 2, predators = 2, energy = 5, doAuto = True, cycles = 2000, daylengthRatio = 1.2, treeRatio = .05, displayType = False, show = False):
+def main(dimension=10, matingBeans= 0, smartMatingBeans = 0, predators = 0, energy = 1, doAuto = True, cycles = 1000, daylengthRatio = 1.2, treeRatio = .05, displayType = False, show = False, seg1 = '4seg'):
     DX, DY, inputData = dimension, dimension, tileInfo(**{bean.getKey():[], house.getKey():[], tree.getKey():[], predator.getKey():[]})
     screen, background = setup()
     Earth = world('earth', data = inputData, dimensions = (DX,DY))
@@ -508,7 +508,7 @@ def main(dimension=10, matingBeans= 2, smartMatingBeans = 2, predators = 2, ener
     Earth.updateLocs(thing.instances)
     LOG.write(f'beans-{len(bean.aliveInstances)}, trees-{len(tree.aliveInstances)}\n\n\n')
 
-    popOverTime = simulate(Earth, screen, background, daylengthRatio, treeRatio, displayType, auto = doAuto, kcycles = cycles)
+    popOverTime = simulate(Earth, screen, background, daylengthRatio, treeRatio, displayType, auto = doAuto, kcycles = cycles, segm1=seg1)
     for name, data in popOverTime.items():
         if name not in ['organism', 'tree', 'bean']:
             plt.plot(data, label=name)
@@ -534,7 +534,7 @@ def setup(size = (1000,1000)):
     pygame.display.flip()
     return screen, background
 
-def simulate(world, screen, background, dlRatio, treeRatio,  dType = False, auto = True, kcycles = 2000):
+def simulate(world, screen, background, dlRatio, treeRatio,  dType = False, auto = True, kcycles = 2000, segm1 = '4seg'):
     population ={klass.__name__:[len(klass.aliveInstances)] for klass in inheritors(organism)}
     playing = True
     count = 0
@@ -542,18 +542,18 @@ def simulate(world, screen, background, dlRatio, treeRatio,  dType = False, auto
     while playing:
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
-                count, population = currentSimulation(world, count, screen, background, population, dlRatio, treeRatio, display = True)
+                count, population = currentSimulation(world, count, screen, background, population, dlRatio, treeRatio, display = True, seg1 = segm1)
             elif event.type == pygame.QUIT:
                 playing = False
         if auto:
             if count < kcycles:
-                count, population = currentSimulation(world, count, screen, background, population, dlRatio,treeRatio, display = dType)
+                count, population = currentSimulation(world, count, screen, background, population, dlRatio,treeRatio, display = dType, seg1 = segm1)
             else:
                 playing = False
     pygame.quit()
     return population
 #@timer_func
-def currentSimulation(area, count, screen, background,population, ratio,treeRatio, display = False):
+def currentSimulation(area, count, screen, background,population, ratio,treeRatio, display = False, seg1 = '4seg'):
     if not count % abs(area.getDimensions()[0]*(ratio)):
         area.killAll(tree)
         area.resetDisplay(screen, background)
@@ -563,17 +563,27 @@ def currentSimulation(area, count, screen, background,population, ratio,treeRati
         for klass in inheritors(organism):
             population[klass.__name__].append(len(klass.aliveInstances))
     if display:
-        area.updateDisplay(screen, background, dmod = '4seg')
+        area.updateDisplay(screen, background, dmod = seg1)
         pygame.display.flip()
     area.tryActions(bean.aliveInstances+predator.aliveInstances)
-    moveOrganismsGradual(area, bean.aliveInstances+predator.aliveInstances)
+    moveOrganismsGradual(area, bean.aliveInstances+predator.aliveInstances, count)
     return count + 1, population
 
-def moveOrganismsGradual(area, organisms):
+def moveOrganismsGradual(area, organisms, count):
     assert type(area) == world
     for x in organisms:
-        if type(x) == predator:
+        if type(x) == predator and False:
             area.moveOrganismGradual(x,x.pathFind(area))
         area.moveOrganismGradual(x,x.pathFind(area))
-main(predators = 2, smartMatingBeans=0, matingBeans=4, dimension = 35,energy = 3,doAuto = False, show=True, treeRatio = .02, cycles = 1000, daylengthRatio= 1)
+
+main(predators = 0, smartMatingBeans=0, matingBeans=2, dimension = 8,energy = 1,doAuto = False, show=True, treeRatio = .05, cycles = 1000, daylengthRatio= 1.5)
+main(predators = 0,matingBeans=4,doAuto=True,energy = 1,displayType=True,show=True,treeRatio=.05,cycles=1000, dimension = 14, daylengthRatio=1)
+for xlen in range(10, 41, 10):
+    main(matingBeans=2, dimension=xlen, energy=1, show = True)
+main(predators = 2, smartMatingBeans=0, matingBeans=20, dimension = 18,energy = 2,doAuto = False, show=True, treeRatio = .1, cycles = 1000, daylengthRatio= 1.5)
+for x in range(5):
+    main(predators = 2, smartMatingBeans=0, matingBeans=20, dimension = 18,energy = 2,doAuto = True, show=True, treeRatio = .1, cycles = 1000, daylengthRatio= 1)
+main(matingBeans=2,doAuto=False, seg1 = '1seg')
+
+
 LOG.close() 
